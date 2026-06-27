@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+
+<!-- PWA -->
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+<meta name="apple-mobile-web-app-title" content="LabPick"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#0D0F14"/>
+<link rel="manifest" href="manifest.json"/>
+
+<!-- iOS splash + icon (inline SVG as data URI) -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%230D0F14'/%3E%3Ctext x='256' y='320' font-size='280' text-anchor='middle'%3E🧪%3C/text%3E%3C/svg%3E"/>
+
+<title>LabPick</title>
+<script>
+// Load external libs gracefully — works online, fails silently offline
+function loadScript(src, cb){
+  var s=document.createElement('script');
+  s.src=src;
+  s.onload=cb||function(){};
+  s.onerror=function(){ console.warn('Could not load:', src); if(cb) cb(); };
+  document.head.appendChild(s);
+}
+// Load jsQR then ZXing
+loadScript('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js', function(){
+  loadScript('https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js');
+});
+</script>
+<script>loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:#0D0F14;color:#E8EAF2;font-family:'Inter',system-ui,sans-serif;font-size:14px;max-width:480px;margin:0 auto;padding-bottom:72px;min-height:100vh}
+input,select,textarea,button{font-family:inherit;font-size:14px}
+button{cursor:pointer}
+.inp{background:#1E2028;border:1px solid #323548;border-radius:8px;padding:9px 12px;color:#E8EAF2;font-size:14px;width:100%;outline:none}
+.inp::placeholder{color:#5A5D70}
+textarea.inp{resize:vertical;font-family:monospace;font-size:12px}
+.hidden{display:none!important}
+/* Bottom nav */
+#bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#161820;border-top:1px solid #272A36;display:flex;max-width:480px;margin:0 auto;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+.nav-item{flex:1;padding:10px 0 8px;text-align:center;cursor:pointer;border-top:2px solid transparent;transition:all .15s}
+.nav-item.active{border-top-color:#6EC6A0}
+.nav-item .nav-icon{font-size:20px}
+.nav-item .nav-label{font-size:10px;color:#5A5D70;font-weight:400;margin-top:1px}
+.nav-item.active .nav-label{color:#6EC6A0;font-weight:700}
+/* Cards */
+.card{background:#161820;border:1px solid #272A36;border-radius:12px;margin-bottom:10px;overflow:hidden}
+.level-card{margin-bottom:6px}
+.level-header{display:flex;align-items:center;background:#161820;border-radius:10px;padding:10px 12px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.3);user-select:none}
+.level-header:active{opacity:.85}
+.level-title{font-weight:700;font-size:14px;color:#E8EAF2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.level-sub{font-size:10px;color:#5A5D70;margin-top:1px}
+.level-children{padding-left:14px;padding-top:4px}
+.ing-card{display:flex;align-items:flex-start;background:#22253A;border-radius:8px;padding:7px 10px;margin-bottom:4px;border-left:2px solid #2E5A48}
+/* Modal */
+#modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:flex-end;z-index:200}
+#modal-box{background:#161820;border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:480px;margin:0 auto;max-height:90vh;overflow-y:auto}
+/* Tabs (sheet selector) */
+.sheet-tab{padding:5px 10px;border-radius:16px;border:1px solid #272A36;background:#1E2028;color:#8A8EA8;font-size:11px;font-weight:400;white-space:nowrap;margin:0 3px 4px 0}
+.sheet-tab.active{border-color:#6EC6A0;background:#6EC6A012;color:#6EC6A0;font-weight:700}
+/* Type pills */
+.type-pill{padding:6px 12px;border-radius:20px;border:1px solid #272A36;background:#1E2028;color:#8A8EA8;font-size:12px}
+.type-pill.active{border-color:#6EC6A0;background:#6EC6A012;color:#6EC6A0}
+/* Assign mode tabs */
+.mode-tab{flex:1;padding:8px 4px;border-radius:8px;border:1px solid #272A36;background:#1E2028;color:#8A8EA8;font-weight:400;font-size:12px}
+.mode-tab.active{border-color:#6EC6A0;background:#6EC6A012;color:#6EC6A0;font-weight:700}
+/* Expiry badge */
+.badge{font-size:9px;border-radius:4px;padding:2px 5px;font-weight:700}
+/* Color swatch */
+.swatch{width:28px;height:28px;border-radius:6px;cursor:pointer;border:3px solid transparent;display:inline-block;margin-right:6px;margin-bottom:6px}
+.swatch.active{border-color:#fff}
+/* Btn styles */
+.btn-primary{background:#6EC6A0;color:#0D0F14;border:none;border-radius:8px;padding:10px 16px;font-weight:700;font-size:13px}
+.btn-secondary{background:#1E2028;color:#E8EAF2;border:1px solid #323548;border-radius:8px;padding:10px 16px;font-weight:700;font-size:13px}
+.btn-danger{background:#E0707012;color:#E07070;border:1px solid #E0707044;border-radius:8px;padding:10px 16px;font-weight:700;font-size:13px}
+.btn-icon{background:none;border:none;color:#5A5D70;font-size:13px;padding:2px 4px}
+.btn-add{background:#6EC6A012;border:1px solid #2E5A48;color:#6EC6A0;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;white-space:nowrap}
+.btn-small{background:#1E2028;border:1px solid #323548;color:#8A8EA8;border-radius:6px;padding:3px 8px;font-size:11px}
+/* Search result row */
+.search-row{padding:10px 12px;border-radius:8px;margin-bottom:4px;cursor:pointer;background:#1E2028;border:1px solid #272A36;display:flex;justify-content:space-between;align-items:center}
+.search-row:active{background:#6EC6A015}
+/* Section header */
+.sec-head{font-size:11px;font-weight:700;color:#5A5D70;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
+/* Phase header */
+.phase-head{border-bottom:1px solid #272A36;padding:8px 14px;display:flex;align-items:center;gap:8px}
+.phase-dot{width:8px;height:8px;border-radius:50%}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div style="padding:14px 16px 10px;border-bottom:1px solid #272A36">
+  <span style="font-size:20px;font-weight:800;letter-spacing:-.5px">🧪 LabPick</span>
+</div>
+
+<!-- Tabs content -->
+<div id="tab-warehouse" class="tab-content" style="padding:14px"></div>
+<div id="tab-stock" class="tab-content hidden" style="padding:14px"></div>
+<div id="tab-pick" class="tab-content hidden" style="padding:14px"></div>
+<div id="tab-scan" class="tab-content hidden" style="padding:14px"></div>
+
+<!-- Modal -->
+<div id="modal-overlay" class="hidden" onclick="closeModalIfOverlay(event)">
+  <div id="modal-box"></div>
+</div>
+
+<!-- Bottom nav -->
+<div id="bottom-nav">
+  <div class="nav-item active" data-tab="warehouse" onclick="switchTab('warehouse')">
+    <div class="nav-icon">🗄</div><div class="nav-label">Склад</div>
+  </div>
+  <div class="nav-item" data-tab="stock" onclick="switchTab('stock')">
+    <div class="nav-icon">📦</div><div class="nav-label">1С</div>
+  </div>
+  <div class="nav-item" data-tab="pick" onclick="switchTab('pick')">
+    <div class="nav-icon">📋</div><div class="nav-label">Сборка</div>
+  </div>
+  <div class="nav-item" data-tab="scan" onclick="switchTab('scan')">
+    <div class="nav-icon">📷</div><div class="nav-label">Сканер</div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const S = {
+  rooms:[], racks:[], shelves:[], spots:[], meta:[],
+  stock:[], techItems:[], techSheets:[], activeSheet:0,
+  productName:"", batchMass:"",
+  scanMode:"find", scanStatus:null, linkBarcode:null, linkTarget:null,
+  currentTab:"warehouse",
+  assignSpotId:null, assignMode:"search", assignSearch:"",
+  manualForm:{name:"",inci:"",expiry:"",qty:"",type:""},
+  scanDone:null,
+  modal:null, modalForm:{}, editId:null,
+};
+
+// ── Palette ────────────────────────────────────────────────────────────────
+
+function C_ph(p){const m={"А":"#6EC6A0","A":"#6EC6A0","В":"#7BAEE8","B":"#7BAEE8","С":"#C8A8E8","C":"#C8A8E8","Д":"#E8C87A","D":"#E8C87A"};return m[p]||"#8A8EA8";}
+
+// ── Transliteration fuzzy search ───────────────────────────────────────────
+const TR={а:"a",б:"b",в:"v",г:"g",д:"d",е:"e",ё:"yo",ж:"zh",з:"z",и:"i",й:"y",к:"k",л:"l",м:"m",н:"n",о:"o",п:"p",р:"r",с:"s",т:"t",у:"u",ф:"f",х:"h",ц:"ts",ч:"ch",ш:"sh",щ:"sch",ъ:"",ы:"y",ь:"",э:"e",ю:"yu",я:"ya"};
+const tl=s=>s.toLowerCase().split("").map(c=>TR[c]||c).join("");
+const fuzzy=(q,t)=>{if(!q)return true;const ql=q.toLowerCase(),tl2=t.toLowerCase(),qt=tl(q),tt=tl(t);return tl2.includes(ql)||tt.includes(qt)||tt.includes(ql)||tl2.includes(qt);};
+
+// ── Persist (localStorage) ─────────────────────────────────────────────────
+function save(){
+  try{localStorage.setItem("lp_rooms",JSON.stringify(S.rooms));localStorage.setItem("lp_racks",JSON.stringify(S.racks));localStorage.setItem("lp_shelves",JSON.stringify(S.shelves));localStorage.setItem("lp_spots",JSON.stringify(S.spots));localStorage.setItem("lp_meta",JSON.stringify(S.meta));}catch(e){}
+}
+const C = {
+  accent:"#6EC6A0",accentDim:"#2E5A48",accentBg:"#6EC6A015",
+  warn:"#E8A87C",danger:"#E07070",dangerBg:"#E0707015",
+  text:"#E8EAF2",muted:"#5A5D70",muted2:"#8A8EA8",
+  card:"#161820",card2:"#1E2028",card3:"#22253A",border:"#272A36",
+  palette:["#6EC6A0","#7BAEE8","#C8A8E8","#E8C87A","#E8A87C","#E07070","#88AACC","#A8D8A8","#F0B8D0","#B8D0F0","#D4B8F0","#F0D4A8"],
+  roomColors:["#7BAEE8","#C8A8E8","#E8C87A","#88AACC","#A8B8E8"],
+  rackColors:["#6EC6A0","#7BE8B0","#50C8A0","#88E8C0","#40B090"],
+  TYPES:["Порошок","Жидкость","Канистра","Гель","Масло","Воск","Прочее"],
+  PHCOL:{А:"#6EC6A0",A:"#6EC6A0",В:"#7BAEE8",B:"#7BAEE8",С:"#C8A8E8",C:"#C8A8E8",Д:"#E8C87A",D:"#E8C87A","?":"#8A8EA8"},
+};
+function load(){
+  try{
+    const r=localStorage.getItem("lp_rooms"); if(r) S.rooms=JSON.parse(r);
+    const ra=localStorage.getItem("lp_racks"); if(ra) S.racks=JSON.parse(ra);
+    const sh=localStorage.getItem("lp_shelves"); if(sh) S.shelves=JSON.parse(sh);
+    const sp=localStorage.getItem("lp_spots"); if(sp) S.spots=JSON.parse(sp);
+    const m=localStorage.getItem("lp_meta"); if(m) S.meta=JSON.parse(m);
+  }catch(e){}
+}
+
+// ── Parsers ────────────────────────────────────────────────────────────────
+function parse1C(text){
+  return text.trim().split("\n").map((line,i)=>{
+    const c=line.split(/[;\t]/).map(s=>s.replace(/^"|"$/g,"").trim());
+    if(!c[0]||["наименование","name","номенклатура"].includes(c[0].toLowerCase())) return null;
+    return{id:"i"+i,tradeName:c[0],qty:parseFloat(c[1]?.replace(",","."))||0,expiry:c[2]||"",inci:"",barcode:"",spotId:""};
+  }).filter(Boolean);
+}
+function parseTechText(text){
+  let ph="";
+  return text.trim().split("\n").map(line=>{
+    const c=line.split(/\t/).map(s=>s.trim());
+    if(c[0]) ph=c[0].toUpperCase();
+    if(!c[1]||c[1]==="Торговое наименование") return null;
+    return{phase:ph||"А",trade:c[1],inci:c[2]||"",pct:parseFloat(c[3]?.replace(",","."))||0};
+  }).filter(Boolean);
+}
+function parseTechRows(rows){
+  const isA=rows.some(r=>{const v=String(r[1]||"").trim();return v.length===1&&/^[А-ЯA-Z]$/.test(v);});
+  return isA?parseTechRowsA(rows):parseTechRowsB(rows);
+}
+function parseTechRowsA(rows){
+  let ph="";const items=[];
+  for(const row of rows){
+    const phase=String(row[1]||"").trim(),trade=String(row[2]||"").trim(),inci=String(row[3]||"").trim();
+    const pct=parseFloat(String(row[5]||row[4]||"").replace(",","."));
+    if(phase.length===1&&/^[А-ЯA-Z]$/.test(phase)) ph=phase.toUpperCase();
+    if(!trade||trade==="Торговое наименование"||trade==="Наименование") continue;
+    if(isNaN(pct)||pct<=0) continue;
+    items.push({phase:ph||"А",trade,inci,pct});
+  }
+  return items;
+}
+function parseSvodnыSheet(rows){
+  const products=[];let currentName="",currentItems=[],inTable=false;
+  for(const row of rows){
+    const c1=String(row[1]||"").trim(),c2=String(row[2]||"").trim(),c3=String(row[3]||"").trim();
+    if(c1==="Торговое наименование"||c1==="Наименование"){inTable=true;continue;}
+    const pct=parseFloat(c3.replace(",","."));
+    if(inTable&&c1&&!isNaN(pct)&&pct>0){currentItems.push({phase:"А",trade:c1,inci:c2,pct});continue;}
+    if(inTable&&(!c1||(!isNaN(parseFloat(c1))&&currentItems.length>0))){
+      if(currentName&&currentItems.length>0) products.push({name:currentName,items:currentItems});
+      currentName="";currentItems=[];inTable=false;continue;
+    }
+    if(!inTable&&c1&&c1!=="Торговое наименование"&&isNaN(parseFloat(c3))){
+      if(currentName&&currentItems.length>0) products.push({name:currentName,items:currentItems});
+      currentName=c1;currentItems=[];inTable=false;
+    }
+  }
+  if(currentName&&currentItems.length>0) products.push({name:currentName,items:currentItems});
+  return products;
+}
+function parseTechRowsB(rows){const p=parseSvodnыSheet(rows);return p.length>0?p[0].items:[];}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function mergeStock(raw){
+  return raw.map(item=>{
+    const m=S.meta.find(x=>x.tradeName.toLowerCase()===item.tradeName.toLowerCase());
+    return{...item,spotId:m?.spotId||"",barcode:m?.barcode||"",inci:m?.inci||"",expiry:m?.expiry||item.expiry};
+  });
+}
+function saveMeta(tradeName,patch){
+  const idx=S.meta.findIndex(x=>x.tradeName.toLowerCase()===tradeName.toLowerCase());
+  if(idx>=0) S.meta[idx]={...S.meta[idx],...patch};
+  else S.meta.push({tradeName,...patch});
+  S.stock=S.stock.map(x=>x.tradeName.toLowerCase()===tradeName.toLowerCase()?{...x,...patch}:x);
+  save();
+}
+function getIngsBySpot(spotId){
+  return S.meta.filter(m=>m.spotId===spotId).map(m=>{
+    const s=S.stock.find(x=>x.tradeName.toLowerCase()===m.tradeName.toLowerCase());
+    return s?{...s,...m}:{...m,qty:m.qty||0};
+  });
+}
+function getSpotPath(spotId){
+  const spot=S.spots.find(s=>s.id===spotId);if(!spot) return "";
+  const shelf=S.shelves.find(s=>s.id===spot.shelfId);
+  const rack=shelf?S.racks.find(r=>r.id===shelf.rackId):null;
+  const room=rack?S.rooms.find(r=>r.id===rack.roomId):null;
+  return[room?.name,rack?.name,shelf?.name,spot?.name].filter(Boolean).join(" › ");
+}
+function findIngByBarcode(bc){
+  const m=S.meta.find(x=>x.barcode===bc);if(!m) return null;
+  const s=S.stock.find(x=>x.tradeName.toLowerCase()===m.tradeName.toLowerCase());
+  return s?{...s,...m}:{...m,qty:m.qty||0};
+}
+function countRoomIngs(roomId){
+  const rids=S.racks.filter(r=>r.roomId===roomId).map(r=>r.id);
+  const sids=S.shelves.filter(s=>rids.includes(s.rackId)).map(s=>s.id);
+  const pids=S.spots.filter(s=>sids.includes(s.shelfId)).map(s=>s.id);
+  return S.meta.filter(m=>pids.includes(m.spotId)).length;
+}
+function countRackIngs(rackId){
+  const sids=S.shelves.filter(s=>s.rackId===rackId).map(s=>s.id);
+  const pids=S.spots.filter(s=>sids.includes(s.shelfId)).map(s=>s.id);
+  return S.meta.filter(m=>pids.includes(m.spotId)).length;
+}
+function expiryBadge(d){
+  if(!d) return "";
+  const days=Math.floor((new Date(d)-Date.now())/86400000);
+  const [col,bg,lbl]=days<0?[C.danger,"#E0707020","Просрок"]:days<30?[C.warn,"#E8A87C20",days+"д"]:[C.muted2,C.card2,d.slice(0,7)];
+  return `<span class="badge" style="color:${col};background:${bg}">${lbl}</span>`;
+}
+function uid(){return Date.now()+"_"+Math.random().toString(36).slice(2);}
+function h(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+// ── Delete helpers ─────────────────────────────────────────────────────────
+function showDeleteConfirm(msg, onConfirm){
+  S.modal="deleteConfirm";
+  S.deleteConfirmMsg=msg;
+  S.deleteConfirmFn=onConfirm;
+  renderModal();
+  document.getElementById("modal-overlay").classList.remove("hidden");
+}
+function deleteRoom(id){
+  const item=S.rooms.find(x=>x.id===id);
+  showDeleteConfirm("Удалить помещение «"+(item?.name||"")+"»? Все стеллажи и полки внутри тоже удалятся.", ()=>{
+    const rids=S.racks.filter(r=>r.roomId===id).map(r=>r.id);
+    const sids=S.shelves.filter(s=>rids.includes(s.rackId)).map(s=>s.id);
+    const pids=S.spots.filter(s=>sids.includes(s.shelfId)).map(s=>s.id);
+    S.meta=S.meta.map(x=>pids.includes(x.spotId)?{...x,spotId:""}:x);
+    S.spots=S.spots.filter(x=>!pids.includes(x.id));
+    S.shelves=S.shelves.filter(x=>!sids.includes(x.id));
+    S.racks=S.racks.filter(x=>!rids.includes(x.id));
+    S.rooms=S.rooms.filter(x=>x.id!==id);
+    save();closeModal();render();
+  });
+}
+function deleteRack(id){
+  const item=S.racks.find(x=>x.id===id);
+  showDeleteConfirm("Удалить стеллаж «"+(item?.name||"")+"»?", ()=>{
+    const sids=S.shelves.filter(s=>s.rackId===id).map(s=>s.id);
+    const pids=S.spots.filter(s=>sids.includes(s.shelfId)).map(s=>s.id);
+    S.meta=S.meta.map(x=>pids.includes(x.spotId)?{...x,spotId:""}:x);
+    S.spots=S.spots.filter(x=>!pids.includes(x.id));
+    S.shelves=S.shelves.filter(x=>x.rackId!==id);
+    S.racks=S.racks.filter(x=>x.id!==id);
+    save();closeModal();render();
+  });
+}
+function deleteShelf(id){
+  const item=S.shelves.find(x=>x.id===id);
+  showDeleteConfirm("Удалить полку «"+(item?.name||"")+"»?", ()=>{
+    const pids=S.spots.filter(s=>s.shelfId===id).map(s=>s.id);
+    S.meta=S.meta.map(x=>pids.includes(x.spotId)?{...x,spotId:""}:x);
+    S.spots=S.spots.filter(x=>x.shelfId!==id);
+    S.shelves=S.shelves.filter(x=>x.id!==id);
+    save();closeModal();render();
+  });
+}
+function deleteSpot(id){
+  const item=S.spots.find(x=>x.id===id);
+  showDeleteConfirm("Удалить место «"+(item?.name||"")+"»?", ()=>{
+    S.meta=S.meta.map(x=>x.spotId===id?{...x,spotId:""}:x);
+    S.spots=S.spots.filter(x=>x.id!==id);
+    save();closeModal();render();
+  });
+}
+
+// ── Tab switching ──────────────────────────────────────────────────────────
+function switchTab(tab){
+  if(tab!=="warehouse") S.highlightIng=null;
+  S.currentTab=tab;
+  document.querySelectorAll(".tab-content").forEach(el=>el.classList.add("hidden"));
+  document.querySelectorAll(".nav-item").forEach(el=>el.classList.remove("active"));
+  document.getElementById("tab-"+tab).classList.remove("hidden");
+  document.querySelector(`[data-tab="${tab}"]`).classList.add("active");
+  render();
+}
+
+// ── Expand state ───────────────────────────────────────────────────────────
+const expanded={};
+function toggleExpand(id){expanded[id]=!expanded[id];render();}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function render(){
+  const tab=S.currentTab;
+  if(tab==="warehouse") renderWarehouse();
+  else if(tab==="stock") renderStock();
+  else if(tab==="pick") renderPick();
+  else if(tab==="scan") renderScan();
+}
+
+// ── WAREHOUSE ──────────────────────────────────────────────────────────────
+function renderWarehouse(){
+  const el=document.getElementById("tab-warehouse");
+  let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <span class="sec-head" style="margin:0">СТРУКТУРА СКЛАДА</span>
+    <button class="btn-add" style="font-size:12px;padding:6px 12px" onclick="openModal('room')">+ Помещение</button>
+  </div>`;
+  if(!S.rooms.length){
+    html+=`<div style="text-align:center;color:${C.muted};padding:50px 16px;line-height:2.2"><div style="font-size:32px;margin-bottom:8px">🏭</div>Добавьте помещение<br><span style="font-size:12px">Помещение → Стеллаж → Полка → Место → Ингредиент</span></div>`;
+  }
+  for(const room of S.rooms){
+    const roomRacks=S.racks.filter(r=>r.roomId===room.id);
+    const ingCount=countRoomIngs(room.id);
+    const isOpen=expanded["room_"+room.id];
+    html+=`<div class="level-card">
+      <div class="level-header" style="border-left:3px solid ${room.color}" onclick="toggleExpand('room_${room.id}')">
+        <span style="width:14px;height:14px;border-radius:3px;background:${room.color};display:inline-block;flex-shrink:0;margin-right:10px"></span>
+        <div style="flex:1;min-width:0">
+          <div class="level-title">${h(room.name)}</div>
+          <div class="level-sub">${roomRacks.length} стеллажей · ${ingCount} ингр.</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;margin-left:8px">
+          <button class="btn-add" onclick="event.stopPropagation();openModal('rack','${room.id}')">+ Стеллаж</button>
+          <button class="btn-icon" onclick="event.stopPropagation();openEdit('room','${room.id}')">✏️</button>
+          <button class="btn-icon" onclick="event.stopPropagation();deleteRoom('${room.id}')">🗑</button>
+          <span style="color:${C.muted};font-size:11px">${isOpen?"▲":"▼"}</span>
+        </div>
+      </div>
+      ${isOpen?`<div class="level-children">${renderRacks(room)}</div>`:""}
+    </div>`;
+  }
+  el.innerHTML=html;
+}
+function renderRacks(room){
+  const roomRacks=S.racks.filter(r=>r.roomId===room.id);
+  if(!roomRacks.length) return `<div style="font-size:11px;color:${C.muted};padding:4px 0 8px">Нет стеллажей</div>`;
+  return roomRacks.map(rack=>{
+    const rackShelves=S.shelves.filter(s=>s.rackId===rack.id);
+    const ingCount=countRackIngs(rack.id);
+    const isOpen=expanded["rack_"+rack.id];
+    return `<div class="level-card">
+      <div class="level-header" style="border-left:3px solid ${rack.color}" onclick="toggleExpand('rack_${rack.id}')">
+        <span style="width:14px;height:14px;border-radius:3px;background:${rack.color};display:inline-block;flex-shrink:0;margin-right:10px"></span>
+        <div style="flex:1;min-width:0">
+          <div class="level-title">${h(rack.name)}</div>
+          <div class="level-sub">${rackShelves.length} полок · ${ingCount} ингр.</div>
+        </div>
+        <div style="display:flex;gap:5px;align-items:center;flex-shrink:0;margin-left:8px">
+          <button class="btn-small" onclick="event.stopPropagation();openModal('shelf','${rack.id}')">+ Полка</button>
+          <button class="btn-icon" onclick="event.stopPropagation();openEdit('rack','${rack.id}')">✏️</button>
+          <button class="btn-icon" onclick="event.stopPropagation();deleteRack('${rack.id}')">🗑</button>
+          <span style="color:${C.muted};font-size:11px">${isOpen?"▲":"▼"}</span>
+        </div>
+      </div>
+      ${isOpen?`<div class="level-children">${renderShelves(rack)}</div>`:""}
+    </div>`;
+  }).join("");
+}
+function renderShelves(rack){
+  const rackShelves=S.shelves.filter(s=>s.rackId===rack.id);
+  if(!rackShelves.length) return `<div style="font-size:11px;color:${C.muted};padding:4px 0 8px">Нет полок</div>`;
+  return rackShelves.map(shelf=>{
+    const shelfSpots=S.spots.filter(s=>s.shelfId===shelf.id);
+    const isOpen=expanded["shelf_"+shelf.id];
+    return `<div class="level-card">
+      <div class="level-header" style="border-left:3px solid ${shelf.color||'#7BAEE8'}" onclick="toggleExpand('shelf_${shelf.id}')">
+        <span style="width:14px;height:14px;border-radius:3px;background:${shelf.color||'#7BAEE8'};display:inline-block;flex-shrink:0;margin-right:10px"></span>
+        <div style="flex:1;min-width:0">
+          <div class="level-title">${h(shelf.name)}</div>
+          <div class="level-sub">${shelfSpots.length} мест</div>
+        </div>
+        <div style="display:flex;gap:5px;align-items:center;flex-shrink:0;margin-left:8px">
+          <button class="btn-small" onclick="event.stopPropagation();openModal('spot','${shelf.id}')">+ Место</button>
+          <button class="btn-icon" onclick="event.stopPropagation();openEdit('shelf','${shelf.id}')">✏️</button>
+          <button class="btn-icon" onclick="event.stopPropagation();deleteShelf('${shelf.id}')">🗑</button>
+          <span style="color:${C.muted};font-size:11px">${isOpen?"▲":"▼"}</span>
+        </div>
+      </div>
+      ${isOpen?`<div class="level-children">${renderSpots(shelf,rack)}</div>`:""}
+    </div>`;
+  }).join("");
+}
+function renderSpots(shelf,rack){
+  const shelfSpots=S.spots.filter(s=>s.shelfId===shelf.id);
+  if(!shelfSpots.length) return `<div style="font-size:11px;color:${C.muted};padding:4px 0 8px">Нет мест</div>`;
+  return shelfSpots.map(spot=>{
+    const ings=getIngsBySpot(spot.id);
+    const isOpen=expanded["spot_"+spot.id];
+    const ingsHtml=ings.map(ing=>`
+      <div id="ing_${ing.tradeName}" class="ing-card" style="border-left-color:${spot.color||'#2E5A48'};${S.highlightIng&&(ing.tradeName===S.highlightIng||fuzzy(S.highlightIng,ing.tradeName))?"border-left:3px solid "+C.accent+";box-shadow:0 0 0 1px "+C.accent+"44":""}">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px;color:${C.text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h(ing.tradeName)}</div>
+          <div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap;align-items:center">
+            ${ing.type?`<span style="font-size:9px;color:${C.muted2};background:${C.card2};border-radius:3px;padding:1px 4px">${h(ing.type)}</span>`:""}
+            ${ing.inci?`<span style="font-size:9px;color:${C.muted};font-style:italic">${h(ing.inci.slice(0,30))}</span>`:""}
+            ${expiryBadge(ing.expiry)}
+            ${ing.qty>0?`<span style="font-size:9px;color:${C.muted2}">${ing.qty}г</span>`:""}
+            ${ing.barcode?`<span style="font-size:9px;color:${C.accent}">🔗</span>`:""}
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px">
+          <button onclick="event.stopPropagation();openEditIng('${h(ing.tradeName)}')" style="background:none;border:none;color:${C.muted2};font-size:13px;padding:2px 4px">✏️</button>
+          <button onclick="event.stopPropagation();saveMeta('${h(ing.tradeName)}',{spotId:''});render()" style="background:none;border:none;color:${C.muted};font-size:15px;padding:2px 4px">✕</button>
+        </div>
+      </div>`).join("");
+    return `<div class="level-card">
+      <div class="level-header" style="border-left:3px solid ${spot.color||'#C8A8E8'}" onclick="toggleExpand('spot_${spot.id}')">
+        <span style="width:14px;height:14px;border-radius:3px;background:${spot.color||'#C8A8E8'};display:inline-block;flex-shrink:0;margin-right:10px"></span>
+        <div style="flex:1;min-width:0">
+          <div class="level-title">${h(spot.name)}</div>
+          <div class="level-sub">${h(spot.type)} · ${ings.length} ингр.</div>
+        </div>
+        <div style="display:flex;gap:5px;align-items:center;flex-shrink:0;margin-left:8px">
+          <button class="btn-add" style="font-size:10px;padding:3px 7px" onclick="event.stopPropagation();openAssign('${spot.id}')">+ Ингредиент</button>
+          <button class="btn-icon" onclick="event.stopPropagation();openEdit('spot','${spot.id}')">✏️</button>
+          <button class="btn-icon" onclick="event.stopPropagation();deleteSpot('${spot.id}')">🗑</button>
+          <span style="color:${C.muted};font-size:11px">${isOpen?"▲":"▼"}</span>
+        </div>
+      </div>
+      ${isOpen?`<div class="level-children">${ings.length?ingsHtml:`<div style="font-size:11px;color:${C.muted};padding:2px 0 8px">Пусто</div>`}</div>`:""}
+    </div>`;
+  }).join("");
+}
+
+// ── STOCK ──────────────────────────────────────────────────────────────────
+function renderStock(){
+  const el=document.getElementById("tab-stock");
+  el.innerHTML=`
+    <div class="card" style="padding:14px;margin-bottom:12px">
+      <div class="sec-head">ВЫГРУЗКА ИЗ 1С</div>
+      <label style="display:block;background:${C.card2};border:1px dashed #323548;border-radius:8px;padding:12px;text-align:center;cursor:pointer;font-size:13px;color:${C.muted2}">
+        📁 Загрузить файл (CSV / TXT)
+        <input type="file" accept=".csv,.tsv,.txt" style="display:none" onchange="load1CFile(this)">
+      </label>
+      <button onclick="togglePaste('stock-paste')" style="margin-top:8px;width:100%;background:${C.card2};border:1px solid #323548;border-radius:8px;padding:9px 12px;color:${C.muted2};text-align:center">📋 Вставить текст (Название;Кол-во;Срок)</button>
+      <div id="stock-paste" style="display:none;margin-top:8px">
+        <textarea id="stock-paste-text" class="inp" style="height:90px;margin-bottom:8px" placeholder="Гиалуроновая кислота;500;2025-12-01&#10;Глицерин;1200"></textarea>
+        <div style="display:flex;gap:8px">
+          <button class="btn-primary" style="flex:1" onclick="loadStockText()">Загрузить</button>
+          <button class="btn-secondary" onclick="togglePaste('stock-paste')">✕</button>
+        </div>
+      </div>
+      ${S.stock.length?`<div style="font-size:12px;color:${C.accent};margin-top:8px">✓ ${S.stock.length} позиций</div>`:""}
+    </div>
+    <input id="stock-search" class="inp" placeholder="🔍 гиалур… или hyal…" oninput="renderStockList()" style="margin-bottom:10px">
+    <div id="stock-list"></div>`;
+  renderStockList();
+}
+function renderStockList(){
+  const q=(document.getElementById("stock-search")||{}).value||"";
+  const filtered=S.stock.filter(x=>fuzzy(q,x.tradeName)||(x.inci&&fuzzy(q,x.inci)));
+  const el=document.getElementById("stock-list");
+  if(!el) return;
+  if(!S.stock.length){el.innerHTML=`<div style="color:${C.muted};text-align:center;padding:30px 0;font-size:13px">Загрузите выгрузку из 1С</div>`;return;}
+  el.innerHTML=filtered.slice(0,25).map(ing=>`
+    <div class="card" style="padding:11px 14px;margin-bottom:8px">
+      <div style="font-weight:600;font-size:14px;margin-bottom:4px">${h(ing.tradeName)}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        ${ing.spotId?`<span style="font-size:11px;color:${C.accent}">📍 ${h(getSpotPath(ing.spotId))}</span>`:`<span style="font-size:11px;color:${C.muted}">Место не задано</span>`}
+        ${ing.barcode?`<span style="font-size:10px;color:${C.accentDim};background:${C.accentBg};border-radius:3px;padding:1px 5px">🔗</span>`:""}
+        ${expiryBadge(ing.expiry)}
+        ${ing.qty>0?`<span style="font-size:11px;color:${C.muted2}">${ing.qty}г</span>`:""}
+      </div>
+    </div>`).join("")+
+    (filtered.length>25?`<div style="color:${C.muted};text-align:center;font-size:12px;padding:8px">Уточните поиск · ${filtered.length} позиций</div>`:"");
+}
+
+// ── PICK ───────────────────────────────────────────────────────────────────
+function renderPick(){
+  const el=document.getElementById("tab-pick");
+  const sheetsHtml=S.techSheets.length>1?`
+    <div style="margin-bottom:10px">
+      <div style="font-size:10px;color:${C.muted};margin-bottom:6px">ВКЛАДКИ (${S.techSheets.length})</div>
+      <div style="display:flex;flex-wrap:wrap">${S.techSheets.map((s,i)=>`<button class="sheet-tab ${i===S.activeSheet?"active":""}" onclick="selectSheet(${i})">${h(s.name)} <span style="opacity:.6">(${s.items.length})</span></button>`).join("")}</div>
+    </div>`:"";
+
+  el.innerHTML=`
+    <div class="card" style="padding:14px;margin-bottom:12px">
+      <div class="sec-head">ТЕХ КАРТА</div>
+      <label id="xlsx-upload-label" style="display:block;background:${C.card2};border:1px dashed #323548;border-radius:8px;padding:12px;text-align:center;cursor:pointer;font-size:13px;color:${C.muted2};margin-bottom:8px">
+        📊 Загрузить Excel (.xlsx) с тех картами
+        <input type="file" accept=".xlsx,.xls" style="display:none" onchange="loadXlsx(this)">
+      </label>
+      ${sheetsHtml}
+      <button onclick="togglePaste('tech-paste')" style="width:100%;background:${C.card2};border:1px solid #323548;border-radius:8px;padding:9px 12px;color:${C.muted2};text-align:center">📋 Или вставить из Excel (Фаза · Торговое · INCI · %)</button>
+      <div id="tech-paste" style="display:none;margin-top:8px">
+        <textarea id="tech-paste-text" class="inp" style="height:110px;margin-bottom:8px" placeholder="A&#9;Вода&#9;Aqua&#9;Альянс&#9;18.98&#10;&#9;Глицерин&#9;Glycerin&#9;&#9;5.0"></textarea>
+        <div style="display:flex;gap:8px">
+          <button class="btn-primary" style="flex:1" onclick="loadTechText()">Загрузить</button>
+          <button class="btn-secondary" onclick="togglePaste('tech-paste')">✕</button>
+        </div>
+      </div>
+      ${S.techItems.length?`<div style="font-size:12px;color:${C.accent};margin-top:8px;display:flex;justify-content:space-between"><span>✓ ${h(S.productName||"Продукт")} · ${S.techItems.length} ингредиентов</span>${S.techSheets.length>1?`<span style="font-size:10px;color:${C.muted}">вкладка ${S.activeSheet+1}/${S.techSheets.length}</span>`:""}</div>`:""}
+    </div>
+    ${S.techItems.length?renderPickList():`<div style="text-align:center;color:${C.muted};padding:40px 16px;line-height:2">Загрузите тех карту<br><span style="font-size:12px">Скопируйте ячейки из Excel</span></div>`}`;
+  if(S.techItems.length) setTimeout(rerenderPickItems,0);
+}
+function renderPickList(){
+  const batchG=parseFloat(S.batchMass)||0;
+  const phases=[...new Set(S.techItems.map(i=>i.phase))].sort();
+  let html=`<div style="margin-bottom:12px">
+    <label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">Масса партии (г / мл)</label>
+    <input id="batch-mass-inp" class="inp" type="number" value="${h(S.batchMass)}" placeholder="15000"
+      oninput="S.batchMass=this.value"
+      onchange="rerenderPickItems()">
+  </div><div id="pick-items"></div>`;
+  return html;
+}
+
+function goToIngredient(tradeName){
+  // Switch to warehouse tab and highlight the ingredient
+  switchTab("warehouse");
+  S.highlightIng=tradeName;
+  // Expand all levels that contain this ingredient
+  const m=S.meta.find(x=>x.tradeName===tradeName||fuzzy(x.tradeName,tradeName)||fuzzy(tradeName,x.tradeName));
+  if(m&&m.spotId){
+    const spot=S.spots.find(s=>s.id===m.spotId);
+    if(spot){
+      const shelf=S.shelves.find(s=>s.id===spot.shelfId);
+      if(shelf){
+        const rack=S.racks.find(r=>r.id===shelf.rackId);
+        if(rack){
+          expanded["room_"+rack.roomId]=true;
+          expanded["rack_"+rack.id]=true;
+          expanded["shelf_"+shelf.id]=true;
+          expanded["spot_"+spot.id]=true;
+        }
+      }
+    }
+  }
+  render();
+  // Scroll to highlighted ingredient
+  setTimeout(()=>{
+    const el=document.getElementById("ing_"+CSS.escape(tradeName));
+    if(el) el.scrollIntoView({behavior:"smooth",block:"center"});
+  },150);
+}
+
+function rerenderPickItems(){
+  const el=document.getElementById("pick-items");
+  if(!el) return;
+  const batchG=parseFloat(S.batchMass)||0;
+  const phases=[...new Set(S.techItems.map(i=>i.phase))].sort();
+  let html="";
+  for(const ph of phases){
+    const phCol=C_ph(ph);
+    const items=S.techItems.filter(i=>i.phase===ph);
+    html+=`<div class="card" style="margin-bottom:10px">
+      <div class="phase-head" style="background:${phCol}15">
+        <div class="phase-dot" style="background:${phCol}"></div>
+        <span style="font-size:11px;font-weight:700;color:${C.muted2};letter-spacing:1px">ФАЗА ${ph}</span>
+      </div>
+      ${items.map((item,idx)=>{
+        const s=S.stock.find(x=>fuzzy(x.tradeName,item.trade)||fuzzy(item.trade,x.tradeName))
+               ||S.meta.find(x=>fuzzy(x.tradeName,item.trade)||fuzzy(item.trade,x.tradeName));
+        const path=s?.spotId?getSpotPath(s.spotId):"";
+        const grams=batchG?((item.pct/100)*batchG):0;
+        const gramsStr=grams?grams.toFixed(1):"";
+        const inStock=s?parseFloat(s.qty)||0:0;
+        const enough=inStock>=grams&&grams>0;
+        const stockColor=grams>0?(enough?C.accent:C.danger):C.muted2;
+        const inStockColor=inStock>0?(grams>0?stockColor:C.muted2):C.muted;
+        return `<div style="padding:11px 14px;${idx<items.length-1?"border-bottom:1px solid "+C.border:""};cursor:pointer;transition:background .15s"
+          onclick="goToIngredient('${h(item.trade)}')"
+          onmouseenter="this.style.background='#ffffff08'" onmouseleave="this.style.background=''">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:600;font-size:14px">${h(item.trade)}</div>
+              ${item.inci?`<div style="font-size:11px;color:${C.muted};margin-top:1px">${h(item.inci)}</div>`:""}
+              <div style="margin-top:6px">
+                ${path
+                  ?`<div style="font-size:13px;font-weight:700;color:${C.accent};background:${C.accentBg};border-radius:6px;padding:3px 8px;display:inline-flex;align-items:center;gap:4px;margin-bottom:4px">📍 ${h(path)}</div>`
+                  :`<div style="font-size:12px;color:${C.warn};margin-bottom:4px">⚠️ Место не задано</div>`}
+                <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+                  ${s?expiryBadge(s.expiry):""}
+                </div>
+              </div>
+            </div>
+            <div style="text-align:right;margin-left:10px;flex-shrink:0">
+              <div style="font-size:12px;color:${C.muted}">${item.pct}%</div>
+              ${gramsStr
+                ?`<div style="font-size:15px;color:${C.accent};font-weight:800">${gramsStr}г</div>`
+                :""}
+              ${inStock>0
+                ?`<div style="margin-top:4px;text-align:right">
+                    <span style="font-size:10px;color:${C.muted2};letter-spacing:.5px">наличие</span><br>
+                    <span style="font-size:${grams>0?"22":"16"}px;font-weight:800;color:${inStockColor};line-height:1.1">${inStock}г</span>
+                  </div>`
+                :""}
+            </div>
+          </div>
+        </div>`;
+      }).join("")}
+    </div>`;
+  }
+  el.innerHTML=html;
+}
+
+// ── SCAN ───────────────────────────────────────────────────────────────────
+function renderScan(){
+  const el=document.getElementById("tab-scan");
+  let resultHtml="";
+  const ss=S.scanStatus;
+  if(ss&&ss.type==="found"){
+    const ing=ss.ing;
+    if(ing){
+      const path=ing.spotId?getSpotPath(ing.spotId):"";
+      const inTech=S.techItems.find(t=>fuzzy(t.trade,ing.tradeName)||fuzzy(ing.tradeName,t.trade));
+      const batchG=parseFloat(S.batchMass)||0;
+      resultHtml=`<div class="card" style="border-color:${C.accent};padding:16px;margin-bottom:12px">
+        <div style="font-weight:700;font-size:15px;margin-bottom:4px">${h(ing.tradeName)}</div>
+        ${ing.inci?`<div style="font-size:12px;color:${C.muted};margin-bottom:6px">${h(ing.inci)}</div>`:""}
+        ${path?`<div style="font-size:13px;font-weight:700;color:${C.accent};background:${C.accentBg};border-radius:6px;padding:4px 10px;display:inline-block;margin-bottom:8px">📍 ${h(path)}</div>`:""}
+        <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">${expiryBadge(ing.expiry)}${ing.qty>0?`<span style="font-size:11px;color:${C.muted2}">${ing.qty}г</span>`:""}</div>
+        ${S.techItems.length?(inTech?
+          `<div style="background:${C.accentBg};border:1px solid ${C.accentDim};border-radius:10px;padding:14px">
+            <div style="font-size:20px;font-weight:800;color:${C.accent}">✅ НУЖЕН</div>
+            <div style="font-size:12px;color:${C.muted2};margin-top:4px">Фаза ${inTech.phase} · ${inTech.pct}%${batchG?" · "+((inTech.pct/100)*batchG).toFixed(1)+"г":""}</div>
+          </div>`:
+          `<div style="background:${C.dangerBg};border:1px solid ${C.danger}44;border-radius:10px;padding:14px">
+            <div style="font-size:20px;font-weight:800;color:${C.danger}">❌ НЕ НУЖЕН</div>
+            <div style="font-size:12px;color:${C.muted2};margin-top:4px">Не в текущей тех карте</div>
+          </div>`):`<div style="font-size:12px;color:${C.warn}">Загрузите тех карту для проверки</div>`}
+        <button onclick="S.scanStatus=null;startLiveScanner()" style="width:100%;margin-top:12px;background:${C.card2};border:1px solid ${C.border};color:${C.text};border-radius:8px;padding:10px;cursor:pointer;font-size:13px">📷 Сканировать ещё</button>
+      </div>`;
+    } else {
+      resultHtml=`<div class="card" style="border-color:${C.danger};padding:16px;margin-bottom:12px">
+        <div style="font-weight:700;color:${C.danger};margin-bottom:4px">❓ Штрих-код не найден</div>
+        <div style="font-size:12px;color:${C.muted};margin-bottom:10px;font-family:monospace">${h(ss.barcode)}</div>
+        <button onclick="S.scanMode='link';S.linkBarcode='${h(ss.barcode)}';S.scanStatus={type:'link',barcode:'${h(ss.barcode)}'};renderScan()" style="width:100%;background:${C.card2};border:1px solid ${C.border};color:${C.text};border-radius:8px;padding:10px;cursor:pointer;font-size:13px">🔗 Привязать к ингредиенту</button>
+      </div>`;
+    }
+  } else if(ss&&(ss.type==="link"||(S.scanMode==="link"&&S.linkBarcode))){
+    const bc=S.linkBarcode||ss.barcode;
+    resultHtml=`<div class="card" style="padding:16px;margin-bottom:12px">
+      <div style="font-size:11px;color:${C.muted};margin-bottom:4px">Штрих-код:</div>
+      <div style="font-family:monospace;font-size:13px;color:${C.accent};margin-bottom:12px;word-break:break-all">${h(bc)}</div>
+      <input id="link-search" class="inp" placeholder="Поиск: гиалур…" oninput="renderLinkResults()" style="margin-bottom:8px">
+      <div id="link-results" style="max-height:200px;overflow-y:auto;margin-bottom:10px"></div>
+      <button id="link-confirm" class="btn-primary" style="width:100%;display:none" onclick="confirmLink('${h(bc)}')">✓ Привязать</button>
+    </div>`;
+  } else if(ss&&ss.type==="linked"){
+    resultHtml=`<div style="background:${C.accentBg};border:1px solid ${C.accentDim};border-radius:12px;padding:16px;text-align:center;margin-bottom:12px">
+      <div style="font-size:18px;font-weight:800;color:${C.accent}">✅ Привязано</div>
+      <div style="font-size:13px;color:${C.muted2};margin-top:4px">${h(ss.name)}</div>
+    </div>`;
+  } else if(ss&&ss.type==="notfound"){
+    resultHtml=`<div style="background:${C.dangerBg};border:1px solid ${C.danger}44;border-radius:12px;padding:14px;margin-bottom:12px">
+      <div style="font-weight:700;color:${C.danger};margin-bottom:4px">Не распознан</div>
+      <div style="font-size:12px;color:${C.muted}">${h(ss.msg||"")}</div>
+    </div>`;
+  }
+
+  el.innerHTML=`
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      ${[["find","🔍 Найти"],["link","🔗 Привязать"]].map(([m,label])=>
+        `<button class="mode-tab ${S.scanMode===m?"active":""}" onclick="S.scanMode='${m}';S.scanStatus=null;S.linkBarcode=null;stopLiveScanner();renderScan()">${label}</button>`
+      ).join("")}
+    </div>
+
+    <!-- Live camera -->
+    <div class="card" style="margin-bottom:12px;overflow:hidden">
+      <div id="live-cam-wrap" style="position:relative;background:#000;min-height:200px">
+        <video id="live-video" style="width:100%;max-height:260px;object-fit:cover;display:block" playsinline muted></video>
+        <!-- Aiming frame -->
+        <div id="scan-aim" style="display:none;position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center">
+          <div style="width:220px;height:100px;border:2px solid ${C.accent};border-radius:8px;box-shadow:0 0 0 9999px rgba(0,0,0,0.45)"></div>
+        </div>
+        <div id="scan-status-bar" style="display:none;position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:6px 12px;text-align:center"></div>
+      </div>
+      <div style="padding:12px;display:flex;gap:8px">
+        <button id="btn-start-scan" onclick="startLiveScanner()" class="btn-primary" style="flex:1">📷 Включить камеру</button>
+        <button id="btn-stop-scan" onclick="stopLiveScanner()" class="btn-secondary" style="display:none;flex:1">⏹ Стоп</button>
+      </div>
+    </div>
+
+    <!-- Manual barcode input -->
+    <div class="card" style="padding:14px;margin-bottom:12px">
+      <div style="font-size:11px;color:${C.muted};margin-bottom:8px;font-weight:700;letter-spacing:.5px">ВВЕСТИ ВРУЧНУЮ</div>
+      <div style="display:flex;gap:8px">
+        <input id="manual-barcode-inp" class="inp" type="number" inputmode="numeric"
+          placeholder="Цифры со штрих-кода"
+          style="flex:1;font-size:16px"
+          onkeydown="if(event.key==='Enter'){applyManualBarcode();event.preventDefault()}">
+        <button onclick="applyManualBarcode()" style="background:${C.accentBg};border:1px solid ${C.accentDim};color:${C.accent};border-radius:8px;padding:9px 14px;font-weight:700;font-size:13px">Найти</button>
+      </div>
+      ${!S.techItems.length&&S.scanMode==="find"?`<div style="font-size:11px;color:${C.warn};margin-top:8px">⚠️ Загрузите тех карту для проверки ✅/❌</div>`:""}
+    </div>
+
+    ${resultHtml}
+  `;
+
+  if(ss&&(ss.type==="link"||(S.scanMode==="link"&&S.linkBarcode))){renderLinkResults();}
+}
+
+
+// ── LIVE CAMERA SCANNER ────────────────────────────────────────────────────
+let _liveScanStream = null;
+let _liveScanTimer = null;
+let _liveScanActive = false;
+
+function startLiveScanner(){
+  const video = document.getElementById("live-video");
+  const aimDiv = document.getElementById("scan-aim");
+  const statusBar = document.getElementById("scan-status-bar");
+  const btnStart = document.getElementById("btn-start-scan");
+  const btnStop = document.getElementById("btn-stop-scan");
+  if(!video) return;
+
+  S.scanStatus = null;
+
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "environment", width:{ideal:1280}, height:{ideal:720} }
+  }).then(stream => {
+    _liveScanStream = stream;
+    _liveScanActive = true;
+    video.srcObject = stream;
+    video.play();
+    if(aimDiv) aimDiv.style.display = "flex";
+    if(statusBar){ statusBar.style.display="block"; statusBar.textContent="🔍 Наведите камеру на штрих-код…"; }
+    if(btnStart) btnStart.style.display = "none";
+    if(btnStop) btnStop.style.display = "flex";
+
+    // Scan every 400ms
+    _liveScanTimer = setInterval(() => {
+      if(!_liveScanActive || video.readyState < 2) return;
+      const cv = document.createElement("canvas");
+      cv.width = video.videoWidth;
+      cv.height = video.videoHeight;
+      const ctx = cv.getContext("2d");
+      ctx.drawImage(video, 0, 0);
+      const imgData = ctx.getImageData(0, 0, cv.width, cv.height);
+
+      // Try jsQR
+      if(window.jsQR){
+        const qr = window.jsQR(imgData.data, imgData.width, imgData.height, {inversionAttempts:"dontInvert"});
+        if(qr){ onLiveScanResult(qr.data); return; }
+      }
+
+      // Try ZXing
+      if(window.ZXing){
+        try{
+          const hints = new Map();
+          hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[
+            ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8,
+            ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39,
+            ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E,
+            ZXing.BarcodeFormat.QR_CODE,
+          ]);
+          hints.set(ZXing.DecodeHintType.TRY_HARDER, false); // false = faster for live
+          const reader = new ZXing.MultiFormatReader();
+          reader.setHints(hints);
+          const ls = new ZXing.HTMLCanvasElementLuminanceSource(cv);
+          const result = reader.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));
+          if(result){ onLiveScanResult(result.getText()); return; }
+        } catch(e){ /* not found, keep scanning */ }
+      }
+    }, 400);
+
+  }).catch(err => {
+    const statusBar = document.getElementById("scan-status-bar");
+    if(statusBar){
+      statusBar.style.display = "block";
+      statusBar.style.color = "#E07070";
+      statusBar.textContent = "Камера недоступна: " + (err.message||err);
+    }
+    console.warn("Camera error:", err);
+  });
+}
+
+function stopLiveScanner(){
+  _liveScanActive = false;
+  clearInterval(_liveScanTimer);
+  if(_liveScanStream){
+    _liveScanStream.getTracks().forEach(t => t.stop());
+    _liveScanStream = null;
+  }
+  const video = document.getElementById("live-video");
+  if(video){ video.srcObject = null; }
+  const btnStart = document.getElementById("btn-start-scan");
+  const btnStop = document.getElementById("btn-stop-scan");
+  const aimDiv = document.getElementById("scan-aim");
+  const statusBar = document.getElementById("scan-status-bar");
+  if(btnStart) btnStart.style.display = "flex";
+  if(btnStop) btnStop.style.display = "none";
+  if(aimDiv) aimDiv.style.display = "none";
+  if(statusBar) statusBar.style.display = "none";
+}
+
+function onLiveScanResult(bc){
+  // Flash green on aim frame
+  const aimDiv = document.getElementById("scan-aim");
+  const statusBar = document.getElementById("scan-status-bar");
+  if(aimDiv){
+    const box = aimDiv.querySelector("div");
+    if(box){ box.style.borderColor = "#6EC6A0"; box.style.boxShadow = "0 0 0 9999px rgba(0,0,0,0.3)"; }
+  }
+  if(statusBar){ statusBar.style.background = "rgba(110,198,160,.85)"; statusBar.style.color = "#0D0F14"; statusBar.textContent = "✓ " + bc; }
+
+  stopLiveScanner();
+
+  // Short delay so user sees the flash
+  setTimeout(() => {
+    applyScanResult(bc);
+  }, 300);
+}
+
+// Stop scanner when switching tabs
+const _origSwitchTab = switchTab;
+switchTab = function(tab){
+  if(tab !== "scan") stopLiveScanner();
+  _origSwitchTab(tab);
+};
+
+// ── SCAN photo handler ─────────────────────────────────────────────────────
+function handleScanPhoto(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    decodeBarcode(ev.target.result,
+      bc => applyScanResult(bc),
+      () => { S.scanStatus={type:"notfound",msg:"Не распознан. Попробуйте при хорошем освещении, ровно и штрих-код крупно."}; renderScan(); }
+    );
+  };
+  reader.readAsDataURL(file);
+  input.value = "";
+}
+
+function applyManualBarcode(){
+  const inp = document.getElementById("manual-barcode-inp");
+  const bc = inp?.value?.trim();
+  if(!bc){ inp?.focus(); return; }
+  applyScanResult(bc);
+  if(inp) inp.value="";
+}
+
+function applyScanResult(bc){
+  if(S.scanMode==="find"){S.scanStatus={type:"found",barcode:bc,ing:findIngByBarcode(bc)};}
+  else{S.linkBarcode=bc;S.scanStatus={type:"link",barcode:bc};}
+  renderScan();
+}
+
+// ── Load xlsx ──────────────────────────────────────────────────────────────
+function loadXlsx(input){
+  const file=input.files[0];if(!file) return;
+  const lbl=document.getElementById("xlsx-upload-label");
+  if(lbl) lbl.innerHTML="⏳ Загрузка...";
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      if(!window.XLSX){alert("SheetJS ещё загружается, попробуйте ещё раз");renderPick();return;}
+      const wb=window.XLSX.read(ev.target.result,{type:"array"});
+      const sheets=[];
+      for(const name of wb.SheetNames){
+        const ws=wb.Sheets[name];
+        const rows=window.XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
+        const multi=parseSvodnыSheet(rows);
+        if(multi.length>1){multi.forEach(p=>sheets.push({name:p.name||name,items:p.items}));}
+        else{const items=parseTechRows(rows);if(items.length>0) sheets.push({name,items});}
+      }
+      if(!sheets.length){alert("Не найдено ни одной тех карты");renderPick();return;}
+      S.techSheets=sheets;S.activeSheet=0;
+      S.techItems=sheets[0].items;S.productName=sheets[0].name;
+    }catch(e){alert("Ошибка: "+e.message);}
+    renderPick();
+  };
+  reader.readAsArrayBuffer(file);
+  input.value="";
+}
+function selectSheet(idx){
+  S.activeSheet=idx;S.techItems=S.techSheets[idx].items;S.productName=S.techSheets[idx].name;renderPick();
+}
+function load1CFile(input){
+  const file=input.files[0];if(!file) return;
+  const r=new FileReader();r.onload=ev=>{S.stock=mergeStock(parse1C(ev.target.result));renderStock();};r.readAsText(file,"utf-8");input.value="";
+}
+function loadStockText(){
+  const t=(document.getElementById("stock-paste-text")||{}).value||"";
+  S.stock=mergeStock(parse1C(t));renderStock();
+}
+function loadTechText(){
+  const t=(document.getElementById("tech-paste-text")||{}).value||"";
+  S.techItems=parseTechText(t);S.productName="";S.techSheets=[];renderPick();
+}
+
+// ── Paste toggle ───────────────────────────────────────────────────────────
+function togglePaste(id){const el=document.getElementById(id);if(el) el.style.display=el.style.display==="none"?"block":"none";}
+
+// ── EDIT INGREDIENT ──────────────────────────────────────────────────────────
+function openEditIng(tradeName){
+  const m=S.meta.find(x=>x.tradeName===tradeName)||{tradeName};
+  S.modal="editIng";
+  S.editIngName=tradeName;
+  S.editIngForm={
+    tradeName:m.tradeName||"",
+    inci:m.inci||"",
+    expiry:m.expiry||"",
+    qty:m.qty||"",
+    type:m.type||"",
+    barcode:m.barcode||""
+  };
+  renderModal();
+  document.getElementById("modal-overlay").classList.remove("hidden");
+}
+function saveEditIng(){
+  const f=S.editIngForm;
+  const newName=f.tradeName.trim();
+  if(!newName) return;
+  // If name changed — update tradeName in meta
+  if(newName!==S.editIngName){
+    const idx=S.meta.findIndex(x=>x.tradeName===S.editIngName);
+    if(idx>=0) S.meta[idx]={...S.meta[idx],tradeName:newName};
+  }
+  saveMeta(newName,{
+    inci:f.inci,
+    expiry:f.expiry,
+    qty:parseFloat(f.qty)||0,
+    type:f.type,
+    barcode:f.barcode
+  });
+  closeModal();render();
+}
+
+// ── MODAL ──────────────────────────────────────────────────────────────────
+const MODAL_TITLES={room:["🏭 Новое помещение","✏️ Редактировать помещение"],rack:["🗄 Новый стеллаж","✏️ Редактировать стеллаж"],shelf:["📋 Новая полка","✏️ Редактировать полку"],spot:["📦 Новое место","✏️ Редактировать место"]};
+
+function openModal(type,parentId){
+  S.modal=type;S.editId=null;S.modalParentId=parentId||null;
+  S.modalForm={name:"",color:"",type:""};
+  renderModal();document.getElementById("modal-overlay").classList.remove("hidden");
+}
+function openEdit(type,id){
+  S.modal=type;S.editId=id;
+  let item;
+  if(type==="room") item=S.rooms.find(x=>x.id===id);
+  else if(type==="rack") item=S.racks.find(x=>x.id===id);
+  else if(type==="shelf") item=S.shelves.find(x=>x.id===id);
+  else if(type==="spot") item=S.spots.find(x=>x.id===id);
+  S.modalForm={name:item?.name||"",color:item?.color||"",type:item?.type||"",spotType:item?.type||""};
+  renderModal();document.getElementById("modal-overlay").classList.remove("hidden");
+}
+function openAssign(spotId){
+  S.modal="assign";S.assignSpotId=spotId;S.assignMode=S.stock.length?"search":"manual";
+  S.assignSearch="";S.manualForm={name:"",inci:"",expiry:"",qty:"",type:""};S.scanDone=null;
+  renderModal();document.getElementById("modal-overlay").classList.remove("hidden");
+}
+function closeModal(){document.getElementById("modal-overlay").classList.add("hidden");S.modal=null;}
+function closeModalIfOverlay(e){if(e.target===document.getElementById("modal-overlay")) closeModal();}
+
+function renderModal(){
+  const box=document.getElementById("modal-box");
+  const t=S.modal;
+  if(t==="assign"){box.innerHTML=renderAssignModal();return;}
+  if(t==="editIng"){box.innerHTML=renderEditIngModal();return;}
+  if(t==="deleteConfirm"){
+    box.innerHTML=`<div style="font-size:18px;margin-bottom:12px">🗑 Удалить?</div>
+      <div style="font-size:14px;color:${C.muted2};margin-bottom:20px;line-height:1.6">${h(S.deleteConfirmMsg||"")}</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-danger" style="flex:1;font-size:15px" onclick="S.deleteConfirmFn&&S.deleteConfirmFn()">Удалить</button>
+        <button class="btn-secondary" style="flex:1" onclick="closeModal()">Отмена</button>
+      </div>`;
+    return;
+  }
+  const isEdit=!!S.editId;
+  const title=MODAL_TITLES[t]?.[isEdit?1:0]||"";
+  const f=S.modalForm;
+  const colors=(t==="room"||t==="rack"||t==="shelf"||t==="spot")?C.palette:[];
+  let html=`<div style="font-weight:700;font-size:17px;margin-bottom:16px">${title}</div>
+    <label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">Название *</label>
+    <input id="mf-name" class="inp" style="margin-bottom:12px" value="${h(f.name)}" placeholder="${t==="room"?"Производственный цех":t==="rack"?"Стеллаж 1":t==="shelf"?"Полка верхняя":"Место А1"}" onkeydown="if(event.key==='Enter')saveModal()">`;
+  if(colors.length){
+    html+=`<label style="font-size:11px;color:${C.muted};display:block;margin-bottom:8px">Цвет</label><div style="display:flex;flex-wrap:wrap;margin-bottom:16px">`;
+    colors.forEach(col=>html+=`<span class="swatch ${f.color===col?"active":""}" style="background:${col}" onclick="setModalColor('${col}')"></span>`);
+    html+="</div>";
+  }
+  if(t==="spot"){
+    html+=`<label style="font-size:11px;color:${C.muted};display:block;margin-bottom:6px">Тип хранения</label><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">`;
+    C.TYPES.forEach(tp=>html+=`<button class="type-pill ${f.type===tp?"active":""}" onclick="setModalType('${tp}')">${tp}</button>`);
+    html+="</div>";
+  }
+  html+=`<div style="display:flex;gap:8px">
+    <button class="btn-primary" style="flex:1" onclick="saveModal()">${isEdit?"Сохранить":"Добавить"}</button>
+    <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+  </div>`;
+  box.innerHTML=html;
+  setTimeout(()=>document.getElementById("mf-name")?.focus(),100);
+}
+function setModalColor(col){S.modalForm.color=col;renderModal();}
+function setModalType(tp){S.modalForm.type=tp;renderModal();}
+
+function saveModal(){
+  const name=(document.getElementById("mf-name")||{}).value?.trim();if(!name) return;
+  const t=S.modal;const f={...S.modalForm,name};
+  if(S.editId){
+    const eid=S.editId;
+    if(t==="room") S.rooms=S.rooms.map(x=>x.id===eid?{...x,name,color:f.color||x.color}:x);
+    else if(t==="rack") S.racks=S.racks.map(x=>x.id===eid?{...x,name,color:f.color||x.color}:x);
+    else if(t==="shelf") S.shelves=S.shelves.map(x=>x.id===eid?{...x,name,color:f.color||x.color||"#7BAEE8"}:x);
+    else if(t==="spot") S.spots=S.spots.map(x=>x.id===eid?{...x,name,type:f.type||x.type,color:f.color||x.color||"#C8A8E8"}:x);
+  } else {
+    const id=t+"_"+uid();
+    if(t==="room") S.rooms.push({id,name,color:f.color||C.roomColors[S.rooms.length%C.roomColors.length]});
+    else if(t==="rack") S.racks.push({id,roomId:S.modalParentId,name,color:f.color||C.rackColors[S.racks.length%C.rackColors.length]});
+    else if(t==="shelf") S.shelves.push({id,rackId:S.modalParentId,name,color:f.color||"#7BAEE8"});
+    else if(t==="spot") S.spots.push({id,shelfId:S.modalParentId,name,type:f.type||"Прочее",color:f.color||"#C8A8E8"});
+  }
+  save();closeModal();render();
+}
+
+// ── Scan barcode directly into edit-ing modal ─────────────────────────────────
+
+function decodeBarcode(dataUrl, onSuccess, onFail){
+  const img = new Image();
+  img.onload = () => {
+    // Try multiple crops/rotations to improve detection
+    const attempts = [
+      {rotate:0, scale:1},
+      {rotate:90, scale:1},
+      {rotate:0, scale:2},   // enlarge small barcodes
+      {rotate:270, scale:1},
+      {rotate:0, scale:1.5},
+    ];
+    let tried = 0;
+    function tryNext(){
+      if(tried >= attempts.length){ onFail(); return; }
+      const {rotate, scale} = attempts[tried++];
+      const cv = document.createElement("canvas");
+      const rad = rotate * Math.PI / 180;
+      const sw = img.width * scale, sh = img.height * scale;
+      if(rotate===90||rotate===270){ cv.width=sh; cv.height=sw; }
+      else { cv.width=sw; cv.height=sh; }
+      const ctx = cv.getContext("2d");
+      ctx.save();
+      ctx.translate(cv.width/2, cv.height/2);
+      ctx.rotate(rad);
+      ctx.scale(scale, scale);
+      ctx.drawImage(img, -img.width/2, -img.height/2);
+      ctx.restore();
+      const imgData = ctx.getImageData(0,0,cv.width,cv.height);
+      // jsQR
+      if(window.jsQR){
+        const qr = window.jsQR(imgData.data,imgData.width,imgData.height,{inversionAttempts:"attemptBoth"});
+        if(qr){ onSuccess(qr.data); return; }
+      }
+      // ZXing
+      if(window.ZXing){
+        try{
+          const hints = new Map();
+          hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[
+            ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8,
+            ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39,
+            ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E,
+            ZXing.BarcodeFormat.QR_CODE,
+          ]);
+          hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+          const reader = new ZXing.MultiFormatReader();
+          reader.setHints(hints);
+          const ls = new ZXing.HTMLCanvasElementLuminanceSource(cv);
+          const result = reader.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));
+          if(result){ onSuccess(result.getText()); return; }
+        } catch(e){ tryNext(); return; }
+      }
+      tryNext();
+    }
+    tryNext();
+  };
+  img.onerror = onFail;
+  img.src = dataUrl;
+}
+
+function scanBarcodeForEditIng(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    decodeBarcode(ev.target.result,
+      bc => applyBarcode(bc),
+      () => showScanError("Не распознан. Попробуйте: яркий свет, ровно, штрих-код крупно в кадре.")
+    );
+  };
+  reader.readAsDataURL(file);
+  input.value = "";
+}
+
+function applyBarcode(bc){
+  S.editIngForm.barcode=bc;
+  const inp=document.getElementById("edit-barcode-inp");
+  if(inp){
+    inp.value=bc;
+    inp.style.borderColor="#6EC6A0";
+    inp.style.color="#6EC6A0";
+  }
+  const lbl=inp?.parentElement?.querySelector("label");
+  if(lbl){
+    lbl.style.background="#6EC6A015";
+    lbl.style.borderColor="#6EC6A0";
+    lbl.innerHTML='✅<input type="file" accept="image/*" capture="environment" style="display:none" onchange="scanBarcodeForEditIng(this)">';
+    setTimeout(()=>{
+      lbl.style.background="";lbl.style.borderColor="";
+      lbl.innerHTML='📷<input type="file" accept="image/*" capture="environment" style="display:none" onchange="scanBarcodeForEditIng(this)">';
+    },2500);
+  }
+  // Auto-save immediately
+  if(S.editIngName) saveMeta(S.editIngName,{barcode:bc});
+  // Hide error if shown
+  const err=document.getElementById("scan-error-msg");
+  if(err) err.style.display="none";
+}
+function showScanError(msg){
+  const el=document.getElementById("scan-error-msg");
+  if(el){el.textContent=msg;el.style.display="block";}
+  else {
+    const inp=document.getElementById("edit-barcode-inp");
+    if(inp){inp.placeholder=msg;inp.style.borderColor="#E07070";}
+  }
+}
+
+// ── EDIT INGREDIENT modal ─────────────────────────────────────────────────────
+function renderEditIngModal(){
+  const f=S.editIngForm;
+  const TYPES=["Порошок","Жидкость","Канистра","Гель","Масло","Воск","Прочее"];
+  return `<div style="font-weight:700;font-size:17px;margin-bottom:16px">✏️ Редактировать ингредиент</div>
+    <label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">Название</label>
+    <input class="inp" value="${h(f.tradeName)}" oninput="S.editIngForm.tradeName=this.value" style="margin-bottom:8px">
+    <label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">INCI</label>
+    <input class="inp" value="${h(f.inci)}" placeholder="Sodium Hyaluronate" oninput="S.editIngForm.inci=this.value" style="margin-bottom:8px">
+    <label style="font-size:11px;color:${C.muted};display:block;margin-bottom:6px">Тип</label>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
+      ${TYPES.map(tp=>`<button class="type-pill ${f.type===tp?"active":""}" onclick="S.editIngForm.type='${tp}';renderModal()">${tp}</button>`).join("")}
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <div style="flex:1"><label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">Срок годности</label>
+      <input class="inp" type="date" value="${h(f.expiry)}" oninput="S.editIngForm.expiry=this.value"></div>
+      <div style="flex:1"><label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">Остаток (г)</label>
+      <input class="inp" type="number" value="${h(f.qty)}" placeholder="500" oninput="S.editIngForm.qty=this.value"></div>
+    </div>
+    <label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">Штрих-код</label>
+    <div id="scan-error-msg" style="display:none;font-size:11px;color:#E07070;margin-bottom:6px;padding:6px 10px;background:#E0707012;border-radius:6px"></div>
+    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+      <input id="edit-barcode-inp" class="inp" value="${h(f.barcode)}"
+        placeholder="Введите цифры или сканируйте"
+        oninput="S.editIngForm.barcode=this.value"
+        type="number"
+        inputmode="numeric"
+        style="flex:1;font-size:16px;letter-spacing:1px">
+      <label style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:10px;background:${C.accentBg};border:1px solid ${C.accentDim};cursor:pointer;flex-shrink:0;font-size:20px" title="Сканировать фото">
+        📷
+        <input type="file" accept="image/*" capture="environment" style="display:none" onchange="scanBarcodeForEditIng(this)">
+      </label>
+    </div>
+    <div style="font-size:11px;color:${C.muted};margin-bottom:14px;line-height:1.6">
+      Введите цифры под штрих-кодом вручную — это быстрее.<br>
+      Или сфотографируйте: яркий свет, штрих-код горизонтально, вплотную.
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-primary" style="flex:1" onclick="saveEditIng()">Сохранить</button>
+      <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+    </div>`;
+}
+
+// ── ASSIGN modal ───────────────────────────────────────────────────────────
+function renderAssignModal(){
+  const tabs=S.stock.length?[["search","🔍 Из 1С"],["scan","📷 Сканер"],["manual","✏️ Вручную"]]:[["manual","✏️ Вручную"],["scan","📷 Сканер"]];
+  const path=getSpotPath(S.assignSpotId)||"—";
+  const mf=S.manualForm;
+  let content="";
+  if(S.assignMode==="search"){
+    const results=S.stock.filter(x=>S.assignSearch&&(fuzzy(S.assignSearch,x.tradeName)||(x.inci&&fuzzy(S.assignSearch,x.inci)))).slice(0,15);
+    content=`<input id="assign-search" class="inp" placeholder="гиалур… или hyal…" value="${h(S.assignSearch)}" oninput="S.assignSearch=this.value;updateAssignResults()" style="margin-bottom:8px">
+      <div id="assign-results" style="max-height:300px;overflow-y:auto">
+        ${!S.assignSearch?`<div style="color:${C.muted};font-size:12px;padding:12px 0;text-align:center">Начните вводить название</div>`:""}
+        ${S.assignSearch&&!results.length?`<div style="color:${C.muted};font-size:12px;padding:12px 0;text-align:center">Не найдено — <span style="color:${C.accent};cursor:pointer" onclick="S.assignMode='manual';S.manualForm.name=S.assignSearch;renderModal()">добавить вручную</span></div>`:""}
+        ${results.map(x=>`<div class="search-row" onclick="doAssign('${h(x.tradeName)}')">
+          <div><div style="font-weight:600;font-size:13px">${h(x.tradeName)}</div>
+          <div style="display:flex;gap:4px;margin-top:2px">${x.spotId?`<span style="font-size:10px;color:${C.warn}">привязан</span>`:""}${expiryBadge(x.expiry)}${x.qty>0?`<span style="font-size:10px;color:${C.muted}">${x.qty}г</span>`:""}</div></div>
+          <span style="color:${C.accent};font-size:22px">+</span>
+        </div>`).join("")}
+      </div>`;
+  } else if(S.assignMode==="manual"){
+    content=`
+      ${S.scanDone?.notFound?`<div style="background:#E8A87C15;border:1px solid ${C.warn}44;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:${C.warn}">Штрих-код будет привязан: <span style="font-family:monospace">${h((S.scanDone.barcode||"").slice(-8))}</span></div>`:""}
+      <label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">Название *</label>
+      <input id="mf-ing-name" class="inp" value="${h(mf.name)}" placeholder="Гиалуроновая кислота LMW" oninput="S.manualForm.name=this.value" style="margin-bottom:8px">
+      <label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">INCI</label>
+      <input class="inp" value="${h(mf.inci)}" placeholder="Sodium Hyaluronate" oninput="S.manualForm.inci=this.value" style="margin-bottom:8px">
+      <label style="font-size:11px;color:${C.muted};display:block;margin-bottom:6px">Тип</label>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">${C.TYPES.map(tp=>`<button class="type-pill ${mf.type===tp?"active":""}" onclick="S.manualForm.type='${tp}';renderModal()">${tp}</button>`).join("")}</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <div style="flex:1"><label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">Срок годности</label><input class="inp" type="date" value="${h(mf.expiry)}" oninput="S.manualForm.expiry=this.value"></div>
+        <div style="flex:1"><label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">Остаток (г)</label><input class="inp" type="number" value="${h(mf.qty)}" placeholder="500" oninput="S.manualForm.qty=this.value"></div>
+      </div>
+      <button onclick="saveManualIng()" style="width:100%;padding:12px;border-radius:10px;border:none;font-weight:700;font-size:14px;background:${C.accent};color:#0D0F14;cursor:pointer">Сохранить</button>`;
+  } else if(S.assignMode==="scan"){
+    content=`<div style="text-align:center;padding:16px 0">
+      <div style="font-size:44px;margin-bottom:10px">📷</div>
+      <p style="color:${C.muted2};font-size:13px;margin-bottom:16px;line-height:1.5">${S.stock.length?"Сканируйте — найдём в 1С и привяжем автоматически":"Сканируйте для привязки штрих-кода"}</p>
+      <label style="display:block;background:${C.accent};color:#0D0F14;padding:12px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer">
+        📸 Сфотографировать штрих-код
+        <input type="file" accept="image/*" capture="environment" style="display:none" onchange="handleAssignScan(this)">
+      </label>
+      ${S.scanDone?.error?`<div style="background:${C.dangerBg};border-radius:8px;padding:12px;margin-top:10px;font-size:13px;color:${C.danger}">${h(S.scanDone.error)}</div>`:""}
+    </div>`;
+  }
+
+  return `<div style="font-weight:700;font-size:17px;margin-bottom:2px">Добавить ингредиент</div>
+    <div style="font-size:11px;color:${C.muted};margin-bottom:14px">📍 ${h(path)}</div>
+    <div style="display:flex;gap:6px;margin-bottom:16px">${tabs.map(([m,label])=>`<button class="mode-tab ${S.assignMode===m?"active":""}" onclick="S.assignMode='${m}';S.scanDone=null;renderModal()">${label}</button>`).join("")}</div>
+    ${content}
+    <button onclick="closeModal()" style="width:100%;margin-top:12px;padding:10px;border-radius:10px;border:1px solid ${C.border};background:${C.card2};color:${C.muted2};cursor:pointer">Закрыть</button>`;
+}
+function updateAssignResults(){
+  const r=document.getElementById("assign-results");if(!r) return;
+  const results=S.stock.filter(x=>S.assignSearch&&(fuzzy(S.assignSearch,x.tradeName)||(x.inci&&fuzzy(S.assignSearch,x.inci)))).slice(0,15);
+  r.innerHTML=(!S.assignSearch?`<div style="color:${C.muted};font-size:12px;padding:12px 0;text-align:center">Начните вводить название</div>`:"")+
+    (S.assignSearch&&!results.length?`<div style="color:${C.muted};font-size:12px;padding:12px 0;text-align:center">Не найдено — <span style="color:${C.accent};cursor:pointer" onclick="S.assignMode='manual';S.manualForm.name=S.assignSearch;renderModal()">добавить вручную</span></div>`:"")+
+    results.map(x=>`<div class="search-row" onclick="doAssign('${h(x.tradeName)}')">
+      <div><div style="font-weight:600;font-size:13px">${h(x.tradeName)}</div><div style="display:flex;gap:4px;margin-top:2px">${expiryBadge(x.expiry)}${x.qty>0?`<span style="font-size:10px;color:${C.muted}">${x.qty}г</span>`:""}</div></div>
+      <span style="color:${C.accent};font-size:22px">+</span>
+    </div>`).join("");
+}
+function doAssign(tradeName){saveMeta(tradeName,{spotId:S.assignSpotId});closeModal();render();}
+function saveManualIng(){
+  const name=(document.getElementById("mf-ing-name")||{}).value?.trim()||S.manualForm.name?.trim();
+  if(!name) return;
+  saveMeta(name,{spotId:S.assignSpotId,inci:S.manualForm.inci,expiry:S.manualForm.expiry,qty:parseFloat(S.manualForm.qty)||0,type:S.manualForm.type,barcode:S.scanDone?.barcode||""});
+  closeModal();render();
+}
+function handleAssignScan(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    decodeBarcode(ev.target.result,
+      bc => {
+        const found = S.stock.find(x=>x.barcode===bc) || S.meta.find(x=>x.barcode===bc);
+        if(found){ doAssign(found.tradeName); }
+        else { S.scanDone={barcode:bc,notFound:true}; S.assignMode="manual"; renderModal(); }
+      },
+      () => { S.scanDone={error:"Не распознан. Попробуйте при ярком свете, ровно."}; renderModal(); }
+    );
+  };
+  reader.readAsDataURL(file);
+  input.value = "";
+}
+
+
+// ── Init ───────────────────────────────────────────────────────────────────
+try {
+  load();
+  render();
+} catch(e) {
+  console.error('Init error:', e);
+  document.body.innerHTML += '<div style="color:red;padding:20px;font-family:monospace">Error: ' + e.message + '<br>' + e.stack + '</div>';
+}
+</script>
+
+<script>
+// Register service worker for offline support
+if('serviceWorker' in navigator){
+  // Inline service worker as blob
+  const swCode = `
+    const CACHE = 'labpick-v1';
+    const ASSETS = ['./', './index.html'];
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).catch(()=>{}));
+      self.skipWaiting();
+    });
+    self.addEventListener('activate', e => {
+      e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+      self.clients.claim();
+    });
+    self.addEventListener('fetch', e => {
+      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('./')))); 
+    });
+  `;
+  const blob = new Blob([swCode], {type:'application/javascript'});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(()=>{});
+}
+
+// Show "Add to Home Screen" hint for iOS
+window.addEventListener('load', () => {
+  const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+  const isStandalone = window.navigator.standalone;
+  const dismissed = localStorage.getItem('pwa_hint_dismissed');
+  if(isIOS && !isStandalone && !dismissed){
+    const hint = document.createElement('div');
+    hint.id = 'pwa-hint';
+    hint.innerHTML = `
+      <div style="position:fixed;bottom:80px;left:12px;right:12px;background:#1E2028;border:1px solid #6EC6A0;border-radius:14px;padding:14px 16px;z-index:9999;box-shadow:0 4px 24px rgba(0,0,0,.6)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-weight:700;font-size:14px;color:#E8EAF2;margin-bottom:4px">📲 Установить на экран</div>
+            <div style="font-size:12px;color:#8A8EA8;line-height:1.5">Нажми <strong style="color:#6EC6A0">Поделиться</strong> → <strong style="color:#6EC6A0">На экран Домой</strong><br>и приложение появится как нативное</div>
+          </div>
+          <button onclick="document.getElementById('pwa-hint').remove();localStorage.setItem('pwa_hint_dismissed','1')" 
+            style="background:none;border:none;color:#5A5D70;font-size:20px;padding:0 0 0 12px;cursor:pointer;flex-shrink:0">✕</button>
+        </div>
+        <div style="margin-top:10px;text-align:center">
+          <span style="font-size:24px">⬆️</span>
+          <span style="font-size:11px;color:#5A5D70;display:block;margin-top:2px">кнопка внизу Safari</span>
+        </div>
+      </div>`;
+    document.body.appendChild(hint);
+    // Auto hide after 10s
+    setTimeout(()=>{ const el=document.getElementById('pwa-hint'); if(el) el.remove(); }, 10000);
+  }
+});
+</script>
+</body>
+</html>
