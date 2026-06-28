@@ -323,11 +323,57 @@ function aMBC(){const inp=document.getElementById('mbc2');const bc=(inp?.value||
 function rSc(){const ss=S.ss;const bG=parseFloat(S.bm)||0;let res='';
 if(ss?.type==='found'){const ing=ss.ing;if(ing){const path=ing.spotId?gsp(ing.spotId):'';const inTech=S.tech.find(t=>fz(t.trade,ing.tradeName)||fz(ing.tradeName,t.trade));res=`<div class="rf"><div style="font-weight:700;font-size:14px;margin-bottom:3px;color:#0F1829">${h(ing.tradeName)}</div>${ing.inci?`<div style="font-size:10px;color:#8896AA;margin-bottom:5px">${h(ing.inci)}</div>`:''}<div style="margin-bottom:7px">${path?`<span class="loc">&#128205; ${h(path)}</span>`:''}</div><div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap">${eb(ing.expiry)}${ing.qty>0?`<span class="tag tgr">${ing.qty}г</span>`:''}</div>${S.tech.length?inTech?`<div class="ry"><div style="font-size:16px;font-weight:800;color:#38A169">Нужен</div><div style="font-size:11px;color:#6B7A8D;margin-top:2px">Фаза ${inTech.phase} · ${inTech.pct}%${bG?' · '+((inTech.pct/100)*bG).toFixed(1)+'г':''}</div></div>`:`<div class="rno"><div style="font-size:16px;font-weight:800;color:#E53E3E">Не нужен</div><div style="font-size:11px;color:#6B7A8D;margin-top:2px">Не в текущей тех карте</div></div>`:`<span class="tag tgr">Загрузите тех карту для проверки</span>`}<button onclick="S.ss=null;stSc2()" style="width:100%;margin-top:10px;background:#fff;border:1.5px solid #E8ECF2;color:#6B7A8D;border-radius:7px;padding:8px;font-size:12px;font-weight:600;cursor:pointer">Сканировать ещё</button></div>`;
 }else{res=`<div style="background:#FFF5F5;border:1.5px solid #FEB2B2;border-radius:11px;padding:13px;margin-bottom:9px"><div style="font-weight:700;color:#E53E3E;margin-bottom:3px">Штрих-код не найден</div><div style="font-size:11px;color:#8896AA;margin-bottom:9px;font-family:monospace;word-break:break-all">${h(ss.barcode)}</div><button onclick="S.sm='link';S.ss=null;S.lb='${h(ss.barcode||'')}';rT()" style="width:100%;background:#fff;border:1.5px solid #E8ECF2;color:#6B7A8D;border-radius:7px;padding:8px;font-size:11px;font-weight:600;cursor:pointer">Привязать к позиции</button></div>`;}}
-else if(ss?.type==='link'||(S.sm==='link'&&S.lb)){const bc=S.lb||ss?.barcode||'';res=`<div class="card" style="padding:13px;margin-bottom:9px"><div class="slbl">Штрих-код</div><div style="font-family:monospace;font-size:12px;color:#1E6BE6;margin-bottom:11px;word-break:break-all;font-weight:600">${h(bc)}</div><input id="ls2" class="inp" placeholder="Поиск позиции..." oninput="rLR()" style="margin-bottom:7px"><div id="lr2" style="max-height:190px;overflow-y:auto;margin-bottom:7px"></div><button id="lob" class="abtn" style="width:100%;display:none" onclick="cL('${h(bc)}')">Привязать</button></div><script>setTimeout(rLR,0)<\/script>`;}
+else if(ss?.type==='link'||(S.sm==='link'&&S.lb)){const bc=S.lb||ss?.barcode||'';res=`<div class="card" style="padding:13px;margin-bottom:9px">
+  <div class="slbl">Штрих-код считан</div>
+  <div style="font-family:monospace;font-size:13px;color:#1E6BE6;margin-bottom:12px;word-break:break-all;font-weight:700;background:#EBF5FF;padding:8px 10px;border-radius:7px">${h(bc)}</div>
+  <div style="font-size:11px;font-weight:700;color:#6B7A8D;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Привязать к существующей позиции</div>
+  <input id="ls2" class="inp" placeholder="Поиск по названию..." oninput="rLR()" style="margin-bottom:7px">
+  <div id="lr2" style="max-height:160px;overflow-y:auto;margin-bottom:7px"></div>
+  <button id="lob" class="abtn" style="width:100%;display:none" onclick="cL('${h(bc)}')">Привязать к найденной позиции</button>
+  <div style="display:flex;align-items:center;gap:8px;margin:10px 0"><div style="flex:1;height:1px;background:#E8ECF2"></div><span style="font-size:11px;color:#8896AA">или</span><div style="flex:1;height:1px;background:#E8ECF2"></div></div>
+  <div style="font-size:11px;font-weight:700;color:#6B7A8D;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Создать новую позицию</div>
+  <div class="fg" style="margin-bottom:8px"><input id="new-ing-name" class="inp" placeholder="Название позиции" style="margin-bottom:0"/></div>
+  <div style="margin-bottom:8px">
+    <div style="font-size:11px;color:#8896AA;margin-bottom:5px">Тип</div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap" id="new-ing-types">${["Порошок","Жидкость","Канистра","Гель","Масло","Воск","Прочее"].map(t=>`<button onclick="selectNewIngType(this,'${t}')" style="padding:4px 10px;border-radius:18px;border:1.5px solid #E8ECF2;background:#F8FAFF;color:#6B7A8D;font-size:11px;cursor:pointer">${t}</button>`).join('')}</div>
+  </div>
+  ${S.spots.length ? `<div style="margin-bottom:8px">
+    <div style="font-size:11px;color:#8896AA;margin-bottom:5px">Место на складе (необязательно)</div>
+    <select id="new-ing-spot" class="inp" style="margin-bottom:0">
+      <option value="">— Без места —</option>
+      ${S.spots.map(sp=>{const path=gsp(sp.id);return`<option value="${sp.id}">${h(path)}</option>`;}).join('')}
+    </select>
+  </div>` : '<div style="font-size:11px;color:#8896AA;margin-bottom:8px">Место: сначала создайте структуру склада</div>'}
+  <button onclick="createAndLinkIng('${h(bc)}')" class="abtn" style="width:100%;background:#1E6BE6;color:#fff;border-color:#1E6BE6;padding:10px;font-size:13px">Создать и привязать штрих-код</button>
+</div><script>setTimeout(rLR,0)<\/script>`;}
 else if(ss?.type==='linked'){res=`<div style="background:#F0FFF4;border:1.5px solid #9AE6B4;border-radius:11px;padding:13px;text-align:center;margin-bottom:9px"><div style="font-size:16px;font-weight:800;color:#38A169">Привязано</div><div style="font-size:12px;color:#6B7A8D;margin-top:3px">${h(ss.name||'')}</div></div>`;}
 return`<div style="display:flex;gap:7px;margin-bottom:11px"><button onclick="S.sm='find';S.ss=null;S.lb=null;stSc();rT()" style="flex:1;padding:8px;border-radius:7px;border:1.5px solid ${S.sm==='find'?'#1E6BE6':'#E8ECF2'};background:${S.sm==='find'?'#EBF5FF':'#F8FAFF'};color:${S.sm==='find'?'#1E6BE6':'#6B7A8D'};font-size:11px;font-weight:${S.sm==='find'?700:500};cursor:pointer">Найти позицию</button><button onclick="S.sm='link';S.ss=null;S.lb=null;stSc();rT()" style="flex:1;padding:8px;border-radius:7px;border:1.5px solid ${S.sm==='link'?'#1E6BE6':'#E8ECF2'};background:${S.sm==='link'?'#EBF5FF':'#F8FAFF'};color:${S.sm==='link'?'#1E6BE6':'#6B7A8D'};font-size:11px;font-weight:${S.sm==='link'?700:500};cursor:pointer">Привязать код</button></div>
 <div class="sb" style="padding:0;overflow:hidden;position:relative"><div id="lv-wrap" style="position:relative;min-height:0"></div><div style="padding:16px 18px"><div style="color:rgba(255,255,255,.9);font-size:12px;font-weight:600">${S.sm==='find'?'Наведите камеру на штрих-код':'Сканируйте для привязки'}</div><div id="ssb" style="color:rgba(255,255,255,.6);font-size:10px;margin-top:6px;min-height:13px"></div><button id="sst" class="sbtn" style="margin-top:8px" onclick="stSc2()">Включить камеру</button><button id="ssp" class="sbtn" style="display:none;margin-top:8px;background:#EBF5FF;color:#1E6BE6" onclick="stSc();document.getElementById('sst').style.display='block';document.getElementById('ssp').style.display='none'">Остановить</button></div></div>
 <div class="mbox"><div class="slbl">Ввести вручную</div><div style="display:flex;gap:7px"><input id="mbc2" class="inp" type="number" inputmode="numeric" placeholder="Цифры со штрих-кода" style="flex:1;font-size:14px" onkeydown="if(event.key==='Enter'){aMBC();event.preventDefault()}"><button class="abtn" onclick="aMBC()">Найти</button></div>${!S.tech.length&&S.sm==='find'?'<div style="font-size:10px;color:#DD6B20;margin-top:7px">Загрузите тех карту во вкладке Сборка</div>':''}</div>${res}`;}
+function selectNewIngType(btn,type){
+  document.querySelectorAll('#new-ing-types button').forEach(b=>{
+    b.style.borderColor='#E8ECF2';b.style.background='#F8FAFF';b.style.color='#6B7A8D';b.style.fontWeight='400';
+  });
+  btn.style.borderColor='#1E6BE6';btn.style.background='#EBF5FF';btn.style.color='#1E6BE6';btn.style.fontWeight='700';
+  btn._selected=true;
+  window._selectedIngType=type;
+}
+function createAndLinkIng(bc){
+  const name=(document.getElementById('new-ing-name')||{}).value?.trim();
+  if(!name){
+    const el=document.getElementById('new-ing-name');
+    if(el){el.style.borderColor='#E53E3E';el.focus();}
+    return;
+  }
+  const spotId=(document.getElementById('new-ing-spot')||{}).value||'';
+  const type=window._selectedIngType||'';
+  // Save to meta
+  svm(name,{barcode:bc,spotId,type,inci:'',expiry:'',qty:0});
+  window._selectedIngType=null;
+  S.lb=null;S.lt=null;
+  S.ss={type:'linked',name};
+  rT();
+}
 function rLR(){const q=(document.getElementById('ls2')||{}).value||'';const el=document.getElementById('lr2');const btn=document.getElementById('lob');if(!el)return;const allItems=[...S.stock,...S.meta.filter(m=>!S.stock.find(s=>s.tradeName.toLowerCase()===m.tradeName.toLowerCase()))];const res=allItems.filter(x=>q&&(fz(q,x.tradeName)||(x.inci&&fz(q,x.inci)))).slice(0,10);el.innerHTML=(!q?`<div style="font-size:11px;color:#8896AA;padding:7px">Начните вводить...</div>`:'')+
 (q&&!res.length?`<div style="font-size:11px;color:#8896AA;padding:7px">Не найдено</div>`:'')+
 res.map(x=>`<div onclick="S.lt='${h(x.tradeName)}';rLR()" style="padding:8px 11px;border-radius:7px;margin-bottom:3px;cursor:pointer;background:${S.lt===x.tradeName?'#EBF5FF':'#F8FAFF'};border:1.5px solid ${S.lt===x.tradeName?'#1E6BE6':'#E8ECF2'}"><div style="font-weight:600;font-size:12px;color:#0F1829">${h(x.tradeName)}</div>${x.inci?`<div style="font-size:10px;color:#8896AA">${h(x.inci)}</div>`:''}</div>`).join('');
