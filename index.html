@@ -305,8 +305,44 @@ function rSh(rack){const items=S.shelves.filter(s=>s.rackId===rack.id);if(!items
 function rSp(shelf){const items=S.spots.filter(s=>s.shelfId===shelf.id);if(!items.length)return`<div style="font-size:11px;color:#8896AA;padding:7px 0">Нет мест</div>`;return items.map(spot=>{const ings=gis(spot.id);const io=EX['sp_'+spot.id];const ih=ings.map(ing=>`<div class="ir" id="ing_${h(ing.tradeName)}" style="${S.hi===ing.tradeName?"border-left:2px solid #1E6BE6;background:#EBF5FF":""}"><div style="flex:1;min-width:0"><div class="in2">${h(ing.tradeName)}</div><div class="im">${ing.type?`<span class="tag tgr">${h(ing.type)}</span>`:''}${ing.inci?`<span class="tag tgr" style="font-style:italic">${h(ing.inci.slice(0,24))}</span>`:''}${eb(ing.expiry)}${ing.qty>0?`<span class="tag tgr">${ing.qty}г</span>`:''}${ing.barcode?'<span class="tag tb">штрих-код</span>':''}</div></div><div style="display:flex;gap:2px;margin-left:5px;flex-shrink:0"><button class="bico" onclick="oei('${h(ing.tradeName)}')">✏</button><button class="bico" onclick="svm('${h(ing.tradeName)}',{spotId:''});rT()">✕</button></div></div>`).join('');return`<div class="card" style="border-left:3px solid ${spot.color||PAL[6]};margin-bottom:5px"><div class="ch" onclick="EX['sp_${spot.id}']=!EX['sp_${spot.id}'];rT()"><div class="cd" style="background:${spot.color||PAL[6]}"></div><div style="flex:1;min-width:0"><div class="ct">${h(spot.name)}</div><div class="cs">${h(spot.type||'—')} · ${ings.length} позиций</div></div><button class="badd" style="font-size:8px;padding:2px 6px" onclick="event.stopPropagation();oas('${spot.id}')">+ Позицию</button><button class="bico" onclick="event.stopPropagation();oe('spot','${spot.id}')">✏</button><button class="bico" onclick="event.stopPropagation();dSp('${spot.id}')">✕</button><span style="color:#C0C8D8;font-size:10px;flex-shrink:0">${io?'▲':'▼'}</span></div>${io?`<div class="chl">${ings.length?ih:`<div style="font-size:11px;color:#8896AA;padding:5px 0">Пусто</div>`}</div>`:''}</div>`;}).join('');}
 function rSt(){return`<div class="card" style="padding:13px;margin-bottom:9px"><div class="slbl">Остатки из 1С</div><label style="display:block;background:#F8FAFF;border:1.5px dashed #D0D8E8;border-radius:7px;padding:10px;text-align:center;cursor:pointer;font-size:12px;color:#8896AA;margin-bottom:7px">Загрузить файл (CSV/TXT)<input type="file" accept=".csv,.tsv,.txt" style="display:none" onchange="l1f(this)"></label><button onclick="tp('sp2')" style="width:100%;background:#F8FAFF;border:1.5px solid #E0E8F4;border-radius:7px;padding:8px;color:#8896AA;font-size:12px;text-align:center">Вставить текст (Название;Кол-во;Срок)</button><div id="sp2" style="display:none;margin-top:7px"><textarea id="spt2" class="inp" style="height:75px;margin-bottom:7px;font-family:monospace;font-size:11px;resize:vertical" placeholder="Гиалуроновая к-та;500;2025-12-01&#10;Глицерин;1200"></textarea><div style="display:flex;gap:7px"><button class="abtn" style="flex:1" onclick="lSt()">Загрузить</button><button class="abtn-s" onclick="tp('sp2')">Отмена</button></div></div>${S.stock.length?`<div style="font-size:11px;color:#38A169;margin-top:7px;font-weight:600">Загружено ${S.stock.length} позиций</div>`:''}</div><input id="ss2" class="inp" placeholder="Поиск позиции..." oninput="rSL()" style="margin-bottom:9px"><div id="sl2"></div><script>setTimeout(rSL,0)<\/script>`;}
 function rSL(){const q=(document.getElementById('ss2')||{}).value||'';const el=document.getElementById('sl2');if(!el)return;if(!S.stock.length){el.innerHTML=`<div style="text-align:center;color:#8896AA;padding:28px;background:#fff;border:1px solid #E8ECF2;border-radius:11px">Загрузите выгрузку из 1С</div>`;return;}const f=S.stock.filter(x=>fz(q,x.tradeName)||(x.inci&&fz(q,x.inci)));el.innerHTML=f.slice(0,25).map(ing=>`<div class="card" style="padding:10px 13px;margin-bottom:7px"><div style="font-weight:600;font-size:13px;margin-bottom:3px;color:#0F1829">${h(ing.tradeName)}</div><div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">${ing.spotId?`<span class="loc">&#128205; ${h(gsp(ing.spotId))}</span>`:`<span class="tag tgr">Место не задано</span>`}${ing.barcode?'<span class="tag tb">штрих-код</span>':''}${eb(ing.expiry)}${ing.qty>0?`<span class="tag tgr">${ing.qty}г</span>`:''}</div></div>`).join('')+(f.length>25?`<div style="text-align:center;color:#8896AA;font-size:11px;padding:7px">Уточните поиск — ${f.length} позиций</div>`:'');}
-function rPk(){const sh=S.sheets.length>1?`<div style="margin-bottom:9px"><div class="slbl">Вкладки (${S.sheets.length})</div><div class="stabs">${S.sheets.map((s,i)=>`<button class="stab ${i===S.as?'a':''}" onclick="selSh(${i})">${h(s.name)} (${s.items.length})</button>`).join('')}</div></div>`:'';return`<div class="card" style="padding:13px;margin-bottom:9px"><div class="slbl">Тех карта</div><label style="display:block;background:#F8FAFF;border:1.5px dashed #D0D8E8;border-radius:7px;padding:10px;text-align:center;cursor:pointer;font-size:12px;color:#8896AA;margin-bottom:7px">Загрузить Excel (.xlsx)<input type="file" accept=".xlsx,.xls" style="display:none" onchange="lXl(this)"></label>${sh}<button onclick="tp('tp2')" style="width:100%;background:#F8FAFF;border:1.5px solid #E0E8F4;border-radius:7px;padding:8px;color:#8896AA;font-size:12px;text-align:center">Вставить из Excel (Фаза · Торговое · INCI · %)</button><div id="tp2" style="display:none;margin-top:7px"><textarea id="tpt2" class="inp" style="height:85px;margin-bottom:7px;font-family:monospace;font-size:11px;resize:vertical" placeholder="A&#9;Вода&#9;Aqua&#9;&#9;18.98&#10;&#9;Глицерин&#9;Glycerin&#9;&#9;5.0"></textarea><div style="display:flex;gap:7px"><button class="abtn" style="flex:1" onclick="lTt()">Загрузить</button><button class="abtn-s" onclick="tp('tp2')">Отмена</button></div></div>${S.tech.length?`<div style="font-size:11px;color:#38A169;margin-top:7px;font-weight:600">${h(S.pn2||'Продукт')} — ${S.tech.length} позиций</div>`:''}</div>${S.tech.length?`<div style="margin-bottom:11px"><label class="lbl">Масса партии (г / мл)</label><input id="bm2" class="inp" type="number" value="${h(S.bm)}" placeholder="15000" oninput="S.bm=this.value;rPI()"></div><div id="pi2"></div><script>setTimeout(rPI,0)<\/script>`:`<div style="text-align:center;color:#8896AA;padding:36px;background:#fff;border:1px solid #E8ECF2;border-radius:11px">Загрузите тех карту</div>`}`;} 
-function rPI(){const el=document.getElementById('pi2');if(!el)return;const bG=parseFloat(S.bm)||0;const phases=[...new Set(S.tech.map(i=>i.phase))].sort();let html='';for(const ph of phases){const phCol=PHC[ph]||'#1E6BE6';const items=S.tech.filter(i=>i.phase===ph);html+=`<div class="card" style="margin-bottom:9px"><div class="ph2" style="background:${phCol}10"><div class="phd" style="background:${phCol}"></div><span class="phl">Фаза ${ph}</span></div>${items.map((item,idx)=>{const s=S.stock.find(x=>fz(x.tradeName,item.trade)||fz(item.trade,x.tradeName))||S.meta.find(x=>fz(x.tradeName,item.trade)||fz(item.trade,x.tradeName));const path=s?.spotId?gsp(s.spotId):'';const grams=bG?((item.pct/100)*bG):0;const gs=grams?grams.toFixed(1):'';const inStock=s?parseFloat(s.qty)||0:0;const ok=inStock>=grams&&grams>0;const sc=grams>0?(ok?'#38A169':'#E53E3E'):'#8896AA';return`<div class="pr" onclick="gI('${h(item.trade)}')" style="${idx===items.length-1?'border:none':''}"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1;min-width:0"><div class="prn">${h(item.trade)}</div>${item.inci?`<div class="pri">${h(item.inci)}</div>`:''}<div style="margin-top:4px">${path?`<span class="loc">&#128205; ${h(path)}</span>`:`<span class="tag to" style="font-weight:600">Место не задано</span>`}</div><div style="margin-top:3px">${s?eb(s.expiry):''}</div></div><div class="prr"><div class="prp">${item.pct}%</div>${gs?`<div class="prg">${gs}г</div>`:''}${inStock>0?`<div class="prs">в наличии</div><div class="prv" style="color:${sc}">${inStock}г</div>`:''}</div></div></div>`;}).join('')}</div>`;}el.innerHTML=html;}
+function rPk(){const sh=S.sheets.length>1?`<div style="margin-bottom:9px"><div class="slbl">Вкладки (${S.sheets.length})</div><div class="stabs">${S.sheets.map((s,i)=>`<button class="stab ${i===S.as?'a':''}" onclick="selSh(${i})">${h(s.name)} (${s.items.length})</button>`).join('')}</div></div>`:'';return`<div class="card" style="padding:13px;margin-bottom:9px"><div class="slbl">Тех карта</div><label style="display:block;background:#F8FAFF;border:1.5px dashed #D0D8E8;border-radius:7px;padding:10px;text-align:center;cursor:pointer;font-size:12px;color:#8896AA;margin-bottom:7px">Загрузить Excel (.xlsx)<input type="file" accept=".xlsx,.xls" style="display:none" onchange="lXl(this)"></label>${sh}<button onclick="tp('tp2')" style="width:100%;background:#F8FAFF;border:1.5px solid #E0E8F4;border-radius:7px;padding:8px;color:#8896AA;font-size:12px;text-align:center">Вставить из Excel (Фаза · Торговое · INCI · %)</button><div id="tp2" style="display:none;margin-top:7px"><textarea id="tpt2" class="inp" style="height:85px;margin-bottom:7px;font-family:monospace;font-size:11px;resize:vertical" placeholder="A&#9;Вода&#9;Aqua&#9;&#9;18.98&#10;&#9;Глицерин&#9;Glycerin&#9;&#9;5.0"></textarea><div style="display:flex;gap:7px"><button class="abtn" style="flex:1" onclick="lTt()">Загрузить</button><button class="abtn-s" onclick="tp('tp2')">Отмена</button></div></div>${S.tech.length?`<div style="font-size:11px;color:#38A169;margin-top:7px;font-weight:600">${h(S.pn2||'Продукт')} — ${S.tech.length} позиций</div>`:''}</div>${S.tech.length?`<div style="margin-bottom:11px"><label class="lbl">Масса партии (г / мл)</label><input id="bm2" class="inp" type="number" value="${h(S.bm)}" placeholder="15000" oninput="S.bm=this.value;rPI()"></div><div id="pi2">${rPIhtml()}</div>`:`<div style="text-align:center;color:#8896AA;padding:36px;background:#fff;border:1px solid #E8ECF2;border-radius:11px">Загрузите тех карту</div>`}`;} 
+function rPIhtml(){
+  const bG=parseFloat(S.bm)||0;
+  const phases=[...new Set(S.tech.map(i=>i.phase))].sort();
+  let html='';
+  for(const ph of phases){
+    const phCol=PHC[ph]||'#1E6BE6';
+    const items=S.tech.filter(i=>i.phase===ph);
+    html+=`<div class="card" style="margin-bottom:9px"><div class="ph2" style="background:${phCol}10"><div class="phd" style="background:${phCol}"></div><span class="phl">Фаза ${ph}</span></div>
+    ${items.map((item,idx)=>{
+      const s=S.stock.find(x=>fz(x.tradeName,item.trade)||fz(item.trade,x.tradeName))||S.meta.find(x=>fz(x.tradeName,item.trade)||fz(item.trade,x.tradeName));
+      const path=s?.spotId?gsp(s.spotId):'';
+      const grams=bG?((item.pct/100)*bG):0;
+      const gs=grams?grams.toFixed(1):'';
+      const inStock=s?parseFloat(s.qty)||0:0;
+      const ok=inStock>=grams&&grams>0;
+      const sc=grams>0?(ok?'#38A169':'#E53E3E'):'#8896AA';
+      return`<div class="pr" onclick="gI('${h(item.trade)}')" style="${idx===items.length-1?'border:none':''}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="flex:1;min-width:0">
+            <div class="prn">${h(item.trade)}</div>
+            ${item.inci?`<div class="pri">${h(item.inci)}</div>`:''}
+            <div style="margin-top:4px">${path?`<span class="loc">&#128205; ${h(path)}</span>`:`<span class="tag to" style="font-weight:600">Место не задано</span>`}</div>
+            <div style="margin-top:3px">${s?eb(s.expiry):''}</div>
+          </div>
+          <div class="prr">
+            <div class="prp">${item.pct}%</div>
+            ${gs?`<div class="prg">${gs}г</div>`:''}
+            ${inStock>0?`<div class="prs">в наличии</div><div class="prv" style="color:${sc}">${inStock}г</div>`:''}
+          </div>
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+  }
+  return html;
+}
+function rPI(){const el=document.getElementById('pi2');if(!el)return;el.innerHTML=rPIhtml();}
+// rPI_old removed
 function gI(name){S.hi=name;const m=S.meta.find(x=>x.tradeName===name);if(m?.spotId){const sp=S.spots.find(s=>s.id===m.spotId);if(sp){const sh=S.shelves.find(s=>s.id===sp.shelfId);if(sh){const ra=S.racks.find(r=>r.id===sh.rackId);if(ra){EX['r_'+ra.roomId]=true;EX['ra_'+ra.id]=true;EX['sh_'+sh.id]=true;EX['sp_'+sp.id]=true;}}}}sT('warehouse');setTimeout(()=>{const el=document.getElementById('ing_'+name);if(el)el.scrollIntoView({behavior:'smooth',block:'center'});},200);}
 let _str=null,_tmr=null;
 function stSc(){clearInterval(_tmr);if(_str){_str.getTracks().forEach(t=>t.stop());_str=null;}const v=document.getElementById('lv');if(v){v.srcObject=null;v.style.display='none';v.style.cssText='display:none;position:absolute;top:0;left:0;width:100%;height:100%';document.body.appendChild(v);}}
@@ -390,14 +426,15 @@ function selectNewIngType(btn,type){
 }
 function onNIRoom(){
   const v=document.getElementById('ni-room').value;
+  window._niRoom=v;window._niRack='';window._niShelf='';window._niSpot='';
   const newInp=document.getElementById('ni-room-new');
   const rackWrap=document.getElementById('ni-rack-wrap');
   const shelfWrap=document.getElementById('ni-shelf-wrap');
   const spotWrap=document.getElementById('ni-spot-wrap');
   if(newInp)newInp.style.display=v==='__new'?'block':'none';
   if(rackWrap)rackWrap.style.display=v&&v!=='__new'?'block':'none';
-  if(shelfWrap)shelfWrap.style.display='none';
-  if(spotWrap)spotWrap.style.display='none';
+  if(shelfWrap){shelfWrap.style.display='none';}
+  if(spotWrap){spotWrap.style.display='none';}
   if(v&&v!=='__new'){
     const racks=S.racks.filter(r=>r.roomId===v);
     const sel=document.getElementById('ni-rack');
@@ -406,12 +443,13 @@ function onNIRoom(){
 }
 function onNIRack(){
   const v=document.getElementById('ni-rack').value;
+  window._niRack=v;window._niShelf='';window._niSpot='';
   const newInp=document.getElementById('ni-rack-new');
   const shelfWrap=document.getElementById('ni-shelf-wrap');
   const spotWrap=document.getElementById('ni-spot-wrap');
   if(newInp)newInp.style.display=v==='__new'?'block':'none';
   if(shelfWrap)shelfWrap.style.display=v&&v!=='__new'?'block':'none';
-  if(spotWrap)spotWrap.style.display='none';
+  if(spotWrap){spotWrap.style.display='none';}
   if(v&&v!=='__new'){
     const shelves=S.shelves.filter(s=>s.rackId===v);
     const sel=document.getElementById('ni-shelf');
@@ -420,6 +458,7 @@ function onNIRack(){
 }
 function onNIShelf(){
   const v=document.getElementById('ni-shelf').value;
+  window._niShelf=v;window._niSpot='';
   const newInp=document.getElementById('ni-shelf-new');
   const spotWrap=document.getElementById('ni-spot-wrap');
   if(newInp)newInp.style.display=v==='__new'?'block':'none';
