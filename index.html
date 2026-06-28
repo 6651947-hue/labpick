@@ -425,21 +425,27 @@ function gI(name){S.hi=name;const m=S.meta.find(x=>x.tradeName===name);if(m?.spo
 let _str=null,_tmr=null;
 function stSc(){clearInterval(_tmr);if(_str){_str.getTracks().forEach(t=>t.stop());_str=null;}const v=document.getElementById('lv');if(v){v.srcObject=null;v.style.display='none';v.style.cssText='display:none;position:absolute;top:0;left:0;width:100%;height:100%';document.body.appendChild(v);}}
 function stSc2(){S.ss=null;const v=document.getElementById('lv');if(!v)return;navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}}).then(stream=>{_str=stream;v.srcObject=stream;v.play();// Move video into scan area
-const wrap=document.getElementById('lv-wrap');if(wrap){wrap.appendChild(v);}v.style.cssText='width:100%;height:200px;max-height:200px;object-fit:cover;display:block;border-radius:11px 11px 0 0;';const sb=document.getElementById('ssb');const ss=document.getElementById('sst');const se=document.getElementById('ssp');if(sb)sb.textContent='Наведите камеру на штрих-код...';if(ss)ss.style.display='none';if(se)se.style.display='block';_tmr=setInterval(()=>{if(v.readyState<2)return;const cv=document.getElementById('sc');if(!cv)return;cv.width=v.videoWidth;cv.height=v.videoHeight;cv.getContext('2d').drawImage(v,0,0);const id=cv.getContext('2d').getImageData(0,0,cv.width,cv.height);if(window.jsQR){const r=window.jsQR(id.data,id.width,id.height,{inversionAttempts:'dontInvert'});if(r){oSc(r.data);return;}}if(window.ZXing){try{const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.QR_CODE]);hints.set(ZXing.DecodeHintType.TRY_HARDER,false);const rd=new ZXing.MultiFormatReader();rd.setHints(hints);const ls=new ZXing.HTMLCanvasElementLuminanceSource(cv);const res=rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));if(res){oSc(res.getText());return;}}catch(e){}}},400);}).catch(e=>{const sb=document.getElementById('ssb');if(sb){sb.textContent='Камера недоступна: '+e.message;sb.style.color='#E53E3E';}});}
-function oSc(bc){stSc();if(S.sm==='find'){S.ss={type:'found',barcode:bc,ing:fib(bc)};rT();}else{// Link mode: fill the barcode field directly without full re-render
-S.lb=bc;
-// Flash success on viewfinder
-const ssb=document.getElementById('ssb');if(ssb){ssb.textContent='Считан: '+bc;ssb.style.color='rgba(255,255,255,.9)';}
-// Fill manual barcode input
-setTimeout(()=>{const inp=document.getElementById('mbc2');if(inp){inp.value=bc;inp.focus();}},50);
-S.ss={type:'link',barcode:bc};rT();}}
+const wrap=document.getElementById('lv-wrap');if(wrap){wrap.appendChild(v);}v.style.cssText='width:100%;height:200px;max-height:200px;object-fit:cover;display:block;border-radius:11px 11px 0 0;';const sb=document.getElementById('ssb');const ss=document.getElementById('sst');const se=document.getElementById('ssp');if(sb)sb.textContent='Наведите камеру на штрих-код...';if(ss)ss.style.display='none';if(se)se.style.display='block';_tmr=setInterval(()=>{if(v.readyState<2)return;const cv=document.getElementById('sc');if(!cv)return;cv.width=v.videoWidth;cv.height=v.videoHeight;cv.getContext('2d').drawImage(v,0,0);const id=cv.getContext('2d').getImageData(0,0,cv.width,cv.height);if(window.jsQR){const r=window.jsQR(id.data,id.width,id.height,{inversionAttempts:'dontInvert'});if(r){oSc(r.data);return;}}if(window.ZXing){try{const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.QR_CODE]);hints.set(ZXing.DecodeHintType.TRY_HARDER,true);const rd=new ZXing.MultiFormatReader();rd.setHints(hints);const ls=new ZXing.HTMLCanvasElementLuminanceSource(cv);const res=rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));if(res){oSc(res.getText());return;}}catch(e){}}},300);}).catch(e=>{const sb=document.getElementById('ssb');if(sb){sb.textContent='Камера недоступна: '+e.message;sb.style.color='#E53E3E';}});}
+function oSc(bc){stSc();if(S.sm==='find'){S.ss={type:'found',barcode:bc,ing:fib(bc)};rT();}else{
+  // Link mode: check if already linked to something
+  const existing=S.meta.find(x=>x.barcode===bc);
+  if(existing){
+    // Already linked - show who owns it with option to reassign
+    S.lb=bc;S.ss={type:'link',barcode:bc,existingOwner:existing.tradeName};
+  } else {
+    S.lb=bc;S.ss={type:'link',barcode:bc};
+  }
+  setTimeout(()=>{const inp=document.getElementById('mbc2');if(inp){inp.value=bc;inp.focus();}},50);
+  rT();
+}}
 function aMBC(){const inp=document.getElementById('mbc2');const bc=(inp?.value||'').trim();if(!bc)return;oSc(bc);if(inp)inp.value='';}
 function rSc(){const ss=S.ss;const bG=parseFloat(S.bm)||0;let res='';
 if(ss?.type==='found'){const ing=ss.ing;if(ing){const path=ing.spotId?gsp(ing.spotId):'';const inTech=S.tech.find(t=>fz(t.trade,ing.tradeName)||fz(ing.tradeName,t.trade));res=`<div class="rf"><div style="font-weight:700;font-size:14px;margin-bottom:3px;color:#0F1829">${h(ing.tradeName)}</div>${ing.inci?`<div style="font-size:10px;color:#8896AA;margin-bottom:5px">${h(ing.inci)}</div>`:''}<div style="margin-bottom:7px">${path?`<span class="loc">&#128205; ${h(path)}</span>`:''}</div><div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap">${eb(ing.expiry)}${ing.qty>0?`<span class="tag tgr">${ing.qty}г</span>`:''}</div>${S.tech.length?inTech?`<div class="ry"><div style="font-size:16px;font-weight:800;color:#38A169">Нужен</div><div style="font-size:11px;color:#6B7A8D;margin-top:2px">Фаза ${inTech.phase} · ${inTech.pct}%${bG?' · '+((inTech.pct/100)*bG).toFixed(1)+'г':''}</div></div>`:`<div class="rno"><div style="font-size:16px;font-weight:800;color:#E53E3E">Не нужен</div><div style="font-size:11px;color:#6B7A8D;margin-top:2px">Не в текущей тех карте</div></div>`:`<span class="tag tgr">Загрузите тех карту для проверки</span>`}<button onclick="S.ss=null;stSc2()" style="width:100%;margin-top:10px;background:#fff;border:1.5px solid #E8ECF2;color:#6B7A8D;border-radius:7px;padding:8px;font-size:12px;font-weight:600;cursor:pointer">Сканировать ещё</button></div>`;
 }else{res=`<div style="background:#FFF5F5;border:1.5px solid #FEB2B2;border-radius:11px;padding:13px;margin-bottom:9px"><div style="font-weight:700;color:#E53E3E;margin-bottom:3px">Штрих-код не найден</div><div style="font-size:11px;color:#8896AA;margin-bottom:9px;font-family:monospace;word-break:break-all">${h(ss.barcode)}</div><button onclick="S.sm='link';S.ss=null;S.lb='${h(ss.barcode||'')}';rT()" style="width:100%;background:#fff;border:1.5px solid #E8ECF2;color:#6B7A8D;border-radius:7px;padding:8px;font-size:11px;font-weight:600;cursor:pointer">Привязать к позиции</button></div>`;}}
 else if(ss?.type==='link'||(S.sm==='link'&&S.lb)){const bc=S.lb||ss?.barcode||'';res=`<div class="card" style="padding:13px;margin-bottom:9px">
   <div class="slbl">Штрих-код считан</div>
-  <div style="font-family:monospace;font-size:13px;color:#1E6BE6;margin-bottom:12px;word-break:break-all;font-weight:700;background:#EBF5FF;padding:8px 10px;border-radius:7px">${h(bc)}</div>
+  <div style="font-family:monospace;font-size:13px;color:#1E6BE6;margin-bottom:8px;word-break:break-all;font-weight:700;background:#EBF5FF;padding:8px 10px;border-radius:7px">${h(bc)}</div>
+  ${ss?.existingOwner?`<div style="background:#F0FFF4;border:1px solid #9AE6B4;border-radius:7px;padding:8px 10px;margin-bottom:10px;font-size:12px"><span style="color:#276749;font-weight:600">Уже привязан к: ${h(ss.existingOwner)}</span><br><span style="color:#6B7A8D">Выберите другую позицию чтобы переназначить</span></div>`:''}
   <div style="font-size:11px;font-weight:700;color:#6B7A8D;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Привязать к существующей позиции</div>
   <input id="ls2" class="inp" placeholder="Поиск по названию..." oninput="rLR()" style="margin-bottom:7px">
   <div id="lr2" style="max-height:160px;overflow-y:auto;margin-bottom:7px"></div>
@@ -716,8 +722,8 @@ function startAssignScanner(){
       cv.getContext('2d').drawImage(v,0,0);
       const id=cv.getContext('2d').getImageData(0,0,cv.width,cv.height);
       if(window.jsQR){const r=window.jsQR(id.data,id.width,id.height,{inversionAttempts:'dontInvert'});if(r){stopAssignScanner();processAssignBC(r.data);return;}}
-      if(window.ZXing){try{const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.QR_CODE]);hints.set(ZXing.DecodeHintType.TRY_HARDER,false);const rd=new ZXing.MultiFormatReader();rd.setHints(hints);const ls=new ZXing.HTMLCanvasElementLuminanceSource(cv);const res=rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));if(res){stopAssignScanner();processAssignBC(res.getText());return;}}catch(e){}}
-    },400);
+      if(window.ZXing){try{const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.QR_CODE]);hints.set(ZXing.DecodeHintType.TRY_HARDER,true);const rd=new ZXing.MultiFormatReader();rd.setHints(hints);const ls=new ZXing.HTMLCanvasElementLuminanceSource(cv);const res=rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));if(res){stopAssignScanner();processAssignBC(res.getText());return;}}catch(e){}}
+    },300);
   }).catch(e=>{if(S.scanDone)S.scanDone.error='Камера недоступна: '+e.message;else S.scanDone={error:'Камера недоступна: '+e.message};rM();});
 }
 function stopAssignScanner(){
@@ -757,9 +763,9 @@ function openManualBCScanner(){
       cv.width=v.videoWidth;cv.height=v.videoHeight;
       cv.getContext('2d').drawImage(v,0,0);
       const id=cv.getContext('2d').getImageData(0,0,cv.width,cv.height);
-      if(window.jsQR){const r=window.jsQR(id.data,id.width,id.height,{inversionAttempts:'dontInvert'});if(r){applyManualBC(r.data);return;}}
-      if(window.ZXing){try{const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.QR_CODE]);hints.set(ZXing.DecodeHintType.TRY_HARDER,false);const rd=new ZXing.MultiFormatReader();rd.setHints(hints);const ls=new ZXing.HTMLCanvasElementLuminanceSource(cv);const res=rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));if(res){applyManualBC(res.getText());return;}}catch(e){}}
-    },400);
+      if(window.jsQR){const r=window.jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});if(r){applyManualBC(r.data);return;}}
+      if(window.ZXing){try{const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.QR_CODE]);hints.set(ZXing.DecodeHintType.TRY_HARDER,true);const rd=new ZXing.MultiFormatReader();rd.setHints(hints);const ls=new ZXing.HTMLCanvasElementLuminanceSource(cv);const res=rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));if(res){applyManualBC(res.getText());return;}}catch(e){}}
+    },300);
   }).catch(e=>{
     const st=document.getElementById('mf-bc-status');
     if(st){st.textContent='Камера недоступна: '+e.message;st.style.color='#E53E3E';}
@@ -1025,8 +1031,8 @@ function startInvCamera(){
       cv.getContext('2d').drawImage(v,0,0);
       const id=cv.getContext('2d').getImageData(0,0,cv.width,cv.height);
       if(window.jsQR){const r=window.jsQR(id.data,id.width,id.height,{inversionAttempts:'dontInvert'});if(r){stopInvCamera();invProcessBC(r.data);return;}}
-      if(window.ZXing){try{const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E]);hints.set(ZXing.DecodeHintType.TRY_HARDER,false);const rd=new ZXing.MultiFormatReader();rd.setHints(hints);const ls=new ZXing.HTMLCanvasElementLuminanceSource(cv);const res=rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));if(res){stopInvCamera();invProcessBC(res.getText());return;}}catch(e){}}
-    },400);
+      if(window.ZXing){try{const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E]);hints.set(ZXing.DecodeHintType.TRY_HARDER,true);const rd=new ZXing.MultiFormatReader();rd.setHints(hints);const ls=new ZXing.HTMLCanvasElementLuminanceSource(cv);const res=rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));if(res){stopInvCamera();invProcessBC(res.getText());return;}}catch(e){}}
+    },300);
   }).catch(e=>{const msg=document.getElementById('inv-scan-msg');if(msg){msg.textContent='Камера недоступна';msg.style.color='#E53E3E';}});
 }
 function stopInvCamera(){
