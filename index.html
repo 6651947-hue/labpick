@@ -143,10 +143,7 @@ footer{background:#F5F7FC;border-top:1px solid #E8ECF2;padding:24px 20px;text-al
 .au{display:flex;align-items:center;gap:7px}
 .ava{width:26px;height:26px;background:#1E6BE6;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700}
 .aex{background:none;border:none;color:#8896AA;font-size:12px;cursor:pointer}
-.ats{background:#fff;border-bottom:1px solid #E8ECF2;display:flex;overflow-x:auto;scrollbar-width:none;position:sticky;top:50px;z-index:49}
-.ats::-webkit-scrollbar{display:none}
-.at{flex:1;min-width:68px;padding:10px 6px 9px;text-align:center;cursor:pointer;border-bottom:2px solid transparent;font-size:11px;font-weight:500;color:#8896AA;white-space:nowrap;transition:all .15s}
-.at.a{color:#1E6BE6;border-bottom-color:#1E6BE6;font-weight:700}
+/* bottom nav - handled by renderBNav JS */
 .ab2{padding:12px;padding-bottom:20px;max-width:510px;margin:0 auto}
 .card{background:#fff;border:1px solid #E8ECF2;border-radius:11px;margin-bottom:9px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .ch{padding:10px 13px;display:flex;align-items:center;cursor:pointer;gap:7px;user-select:none;transition:background .15s}
@@ -283,7 +280,7 @@ function sp(p){
   else if(p==='lo')el.innerHTML=LOH;
   else if(p==='r')el.innerHTML=REH;
   else if(p==='v')el.innerHTML=VEH;
-  else if(p==='a'){ld();el.innerHTML=rAS();rT();}
+  else if(p==='a'){ld();el.innerHTML=rAS();rT();setTimeout(renderBNav,0);}
   window.scrollTo(0,0);
 }
 function dLo(){const e=(document.getElementById('le')||{}).value?.trim()||'';const p=(document.getElementById('lp')||{}).value?.trim()||'';const err=document.getElementById('lerr');if((e==='gde'||e==='demo@gdechto.app')&&p==='chto'){if(err)err.style.display='none';S.u={name:'Демо',email:'demo@gdechto.app'};sp('a');return;}const users=JSON.parse(localStorage.getItem('gc_users')||'[]');const user=users.find(u=>u.email===e&&u.pass===p);if(user){if(err)err.style.display='none';S.u=user;sp('a');return;}if(err)err.style.display='block';}
@@ -294,20 +291,72 @@ function vC(){const code=Array.from(document.querySelectorAll('.ci')).map(x=>x.v
 function rC(){document.querySelectorAll('.ci').forEach(x=>x.value='');const el=document.getElementById('vs');if(el)el.innerHTML='Код отправлен повторно на <strong>'+h(S.pe||'')+'</strong>';document.querySelectorAll('.ci')[0]?.focus();}
 function ci(el,i){el.value=el.value.replace(/\D/g,'').slice(-1);if(el.value&&i<3)document.querySelectorAll('.ci')[i+1].focus();if(i===3&&el.value)vC();}
 function ck(el,e,i){if(e.key==='Backspace'&&!el.value&&i>0)document.querySelectorAll('.ci')[i-1].focus();}
-function rAS(){const u=S.u||{};return`<div class="an"><div class="alo2" onclick="sp('l')">Где<span>Что</span></div><div class="au"><span style="font-size:11px;color:#8896AA">${h(u.name||'')}</span><div class="ava">${(u.name||'U')[0].toUpperCase()}</div><button class="aex" onclick="sp('l')">Выйти</button></div></div><div class="ats" id="ats"><div class="at a" onclick="sT('warehouse')">Склад</div><div class="at" onclick="sT('stock')">Остатки 1С</div><div class="at" onclick="sT('pick')">Сборка</div><div class="at" onclick="sT('scan')">Сканер</div><div class="at" onclick="sT('inv')">Инвентаризация</div></div><div class="ab2" id="ab2"></div>`;}
-function sT(tab){S.tab=tab;if(tab!=='scan')stSc();if(tab!=='inv')stopInvCamera();document.querySelectorAll('.at').forEach((el,i)=>el.classList.toggle('a',['warehouse','stock','pick','scan'][i]===tab));rT();}
+function rAS(){const u=S.u||{};return`<div class="an"><div class="alo2" onclick="sp('l')">Где<span>Что</span></div><div class="au"><span style="font-size:11px;color:#8896AA">${h(u.name||'')}</span><div class="ava">${(u.name||'U')[0].toUpperCase()}</div><button class="aex" onclick="sp('l')">Выйти</button></div></div><div class="ab2" id="ab2" style="padding-bottom:80px;min-height:calc(100vh - 130px)"></div>
+  <!-- Bottom Nav -->
+  <div id="bnav" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:600px;background:#fff;border-top:1px solid #E8ECF2;display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 12px rgba(0,0,0,.06)"></div>`;}
+function sT(tab){
+  S.tab=tab;
+  if(tab!=='scan')stSc();
+  if(tab!=='inv')stopInvCamera();
+  rT();
+  renderBNav();
+}
+function renderBNav(){
+  const nav=document.getElementById('bnav');if(!nav)return;
+  const tabs=[
+    {id:'warehouse',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',label:'Склад'},
+    {id:'stock',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',label:'1С'},
+    {id:'pick',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>',label:'Сборка'},
+    {id:'scan',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h.01M7 12h10M7 17h.01"/></svg>',label:'Сканер'},
+    {id:'inv',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',label:'Инвентарь'},
+  ];
+  nav.innerHTML=tabs.map(t=>`<button onclick="sT('${t.id}')" style="flex:1;border:none;background:none;padding:8px 0 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;color:${S.tab===t.id?'#1E6BE6':'#8896AA'};border-top:2px solid ${S.tab===t.id?'#1E6BE6':'transparent'};transition:all .15s">
+    ${t.icon}
+    <span style="font-size:9px;font-weight:${S.tab===t.id?700:400}">${t.label}</span>
+  </button>`).join('');
+}
 function rT(){const el=document.getElementById('ab2');if(!el)return;if(S.tab==='warehouse')el.innerHTML=rW();else if(S.tab==='stock')el.innerHTML=rSt();else if(S.tab==='pick'){el.innerHTML=rPk();setTimeout(updateProgress,0);}else if(S.tab==='inv')el.innerHTML=rInv();else if(S.tab==='scan')el.innerHTML=rSc();}
-function rW(){let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px"><span class="slbl" style="margin:0">Структура склада</span><button class="abtn" style="font-size:10px;padding:6px 11px" onclick="om('room')">+ Помещение</button></div>`;
-if(!S.rooms.length)return html+`<div style="text-align:center;color:#8896AA;padding:44px 14px;background:#fff;border:1px solid #E8ECF2;border-radius:11px;line-height:2.2"><div style="font-size:36px;opacity:.2;margin-bottom:7px">[ ]</div>Добавьте первое помещение<br><span style="font-size:11px">Помещение — Стеллаж — Полка — Место</span></div>`;
-for(const room of S.rooms){const rr=S.racks.filter(r=>r.roomId===room.id);const ic=cri(room.id);const io=EX['r_'+room.id];html+=`<div class="card" style="border-left:3px solid ${room.color||PAL[0]}"><div class="ch" onclick="EX['r_${room.id}']=!EX['r_${room.id}'];rT()"><div class="cd" style="background:${room.color||PAL[0]}"></div><div style="flex:1;min-width:0"><div class="ct">${h(room.name)}</div><div class="cs">${rr.length} стеллажей · ${ic} позиций</div></div><button class="badd" onclick="event.stopPropagation();om('rack','${room.id}')">+ Стеллаж</button><button class="bico" onclick="event.stopPropagation();oe('room','${room.id}')">✏</button><button class="bico" onclick="event.stopPropagation();dR('${room.id}')">✕</button><span style="color:#C0C8D8;font-size:10px;flex-shrink:0">${io?'▲':'▼'}</span></div>${io?`<div class="chl">${rRa(room)}</div>`:''}</div>`;}
-return html;}
+function rW(){
+  let html=`<div style="display:flex;align-items:center;margin-bottom:11px"><span class="slbl" style="margin:0">Структура склада</span></div><div style="display:flex;flex-direction:column-reverse">`;
+  if(!S.rooms.length)return html+`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center">
+    <div style="font-size:40px;opacity:.2;margin-bottom:12px">&#127981;</div>
+    <div style="font-weight:700;font-size:15px;color:#0F1829;margin-bottom:6px">Добавьте первое помещение</div>
+    <div style="font-size:12px;color:#8896AA;line-height:1.6;margin-bottom:24px">Помещение — Стеллаж — Полка — Место</div>
+    <button onclick="om('room')" style="background:#1E6BE6;color:#fff;border:none;border-radius:10px;padding:14px 32px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px #1E6BE635">+ Добавить помещение</button>
+  </div>`;
+  for(const room of S.rooms){const rr=S.racks.filter(r=>r.roomId===room.id);const ic=cri(room.id);const io=EX['r_'+room.id];html+=`<div class="card" style="border-left:3px solid ${room.color||PAL[0]}"><div class="ch" onclick="EX['r_${room.id}']=!EX['r_${room.id}'];rT()"><div class="cd" style="background:${room.color||PAL[0]}"></div><div style="flex:1;min-width:0"><div class="ct">${h(room.name)}</div><div class="cs">${rr.length} стеллажей · ${ic} позиций</div></div><button class="badd" onclick="event.stopPropagation();om('rack','${room.id}')">+ Стеллаж</button><button class="bico" onclick="event.stopPropagation();oe('room','${room.id}')">✏</button><button class="bico" onclick="event.stopPropagation();dR('${room.id}')">✕</button><span style="color:#C0C8D8;font-size:10px;flex-shrink:0">${io?'▲':'▼'}</span></div>${io?`<div class="chl">${rRa(room)}</div>`:''}</div>`;}
+  html += `</div>`;
+  // FAB button
+  html += `<div style="height:70px"></div>
+  <div style="position:fixed;bottom:72px;right:16px;z-index:90">
+    <button onclick="om('room')" style="background:#1E6BE6;color:#fff;border:none;border-radius:28px;padding:14px 20px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px #1E6BE650;display:flex;align-items:center;gap:8px;white-space:nowrap"><span style="font-size:22px;line-height:1;font-weight:300">+</span> Помещение</button>
+  </div>`;
+  return html;
+}
 function rRa(room){const items=S.racks.filter(r=>r.roomId===room.id);if(!items.length)return`<div style="font-size:11px;color:#8896AA;padding:7px 0">Нет стеллажей</div>`;return items.map(rack=>{const rs=S.shelves.filter(s=>s.rackId===rack.id);const ic=cra(rack.id);const io=EX['ra_'+rack.id];return`<div class="card" style="border-left:3px solid ${rack.color||PAL[1]};margin-bottom:5px"><div class="ch" onclick="EX['ra_${rack.id}']=!EX['ra_${rack.id}'];rT()"><div class="cd" style="background:${rack.color||PAL[1]}"></div><div style="flex:1;min-width:0"><div class="ct">${h(rack.name)}</div><div class="cs">${rs.length} полок · ${ic} позиций</div></div><button class="badd" style="font-size:8px;padding:2px 6px" onclick="event.stopPropagation();om('shelf','${rack.id}')">+ Полка</button><button class="bico" onclick="event.stopPropagation();oe('rack','${rack.id}')">✏</button><button class="bico" onclick="event.stopPropagation();dRa('${rack.id}')">✕</button><span style="color:#C0C8D8;font-size:10px;flex-shrink:0">${io?'▲':'▼'}</span></div>${io?`<div class="chl">${rSh(rack)}</div>`:''}</div>`;}).join('');}
 function rSh(rack){const items=S.shelves.filter(s=>s.rackId===rack.id);if(!items.length)return`<div style="font-size:11px;color:#8896AA;padding:7px 0">Нет полок</div>`;return items.map(shelf=>{const ss=S.spots.filter(s=>s.shelfId===shelf.id);const io=EX['sh_'+shelf.id];return`<div class="card" style="border-left:3px solid ${shelf.color||PAL[5]};margin-bottom:5px"><div class="ch" onclick="EX['sh_${shelf.id}']=!EX['sh_${shelf.id}'];rT()"><div class="cd" style="background:${shelf.color||PAL[5]}"></div><div style="flex:1;min-width:0"><div class="ct">${h(shelf.name)}</div><div class="cs">${ss.length} мест</div></div><button class="badd" style="font-size:8px;padding:2px 6px" onclick="event.stopPropagation();om('spot','${shelf.id}')">+ Место</button><button class="bico" onclick="event.stopPropagation();oe('shelf','${shelf.id}')">✏</button><button class="bico" onclick="event.stopPropagation();dSh('${shelf.id}')">✕</button><span style="color:#C0C8D8;font-size:10px;flex-shrink:0">${io?'▲':'▼'}</span></div>${io?`<div class="chl">${rSp(shelf)}</div>`:''}</div>`;}).join('');}
 function rSp(shelf){const items=S.spots.filter(s=>s.shelfId===shelf.id);if(!items.length)return`<div style="font-size:11px;color:#8896AA;padding:7px 0">Нет мест</div>`;return items.map(spot=>{const ings=gis(spot.id);const io=EX['sp_'+spot.id];const ih=ings.map(ing=>`<div class="ir" id="ing_${h(ing.tradeName)}" style="${S.hi===ing.tradeName?"border-left:2px solid #1E6BE6;background:#EBF5FF":""}"><div style="flex:1;min-width:0"><div class="in2">${h(ing.tradeName)}</div><div class="im">${ing.type?`<span class="tag tgr">${h(ing.type)}</span>`:''} ${ing.pkg?`<span class="tag tgr">${h(ing.pkg)}</span>`:''}${ing.inci?`<span class="tag tgr" style="font-style:italic">${h(ing.inci.slice(0,24))}</span>`:''}${eb(ing.expiry)}${ing.qty>0?`<span class="tag tgr">${ing.qty}г</span>`:''}${ing.barcode?'<span class="tag tb">штрих-код</span>':''}</div></div><div style="display:flex;gap:2px;margin-left:5px;flex-shrink:0"><button class="bico" onclick="oei('${h(ing.tradeName)}')">✏</button><button class="bico" onclick="svm('${h(ing.tradeName)}',{spotId:''});rT()">✕</button></div></div>`).join('');return`<div class="card" style="border-left:3px solid ${spot.color||PAL[6]};margin-bottom:5px"><div class="ch" onclick="EX['sp_${spot.id}']=!EX['sp_${spot.id}'];rT()"><div class="cd" style="background:${spot.color||PAL[6]}"></div><div style="flex:1;min-width:0"><div class="ct">${h(spot.name)}</div><div class="cs">${h(spot.type||'—')} · ${ings.length} позиций</div></div><button class="badd" style="font-size:8px;padding:2px 6px" onclick="event.stopPropagation();oas('${spot.id}')">+ Позицию</button><button class="bico" onclick="event.stopPropagation();oe('spot','${spot.id}')">✏</button><button class="bico" onclick="event.stopPropagation();dSp('${spot.id}')">✕</button><span style="color:#C0C8D8;font-size:10px;flex-shrink:0">${io?'▲':'▼'}</span></div>${io?`<div class="chl">${ings.length?ih:`<div style="font-size:11px;color:#8896AA;padding:5px 0">Пусто</div>`}</div>`:''}</div>`;}).join('');}
-function rSt(){return`<div class="card" style="padding:13px;margin-bottom:9px"><div class="slbl">Остатки из 1С</div><label style="display:block;background:#F8FAFF;border:1.5px dashed #D0D8E8;border-radius:7px;padding:10px;text-align:center;cursor:pointer;font-size:12px;color:#8896AA;margin-bottom:7px">Загрузить файл (CSV/TXT)<input type="file" accept=".csv,.tsv,.txt" style="display:none" onchange="l1f(this)"></label><button onclick="tp('sp2')" style="width:100%;background:#F8FAFF;border:1.5px solid #E0E8F4;border-radius:7px;padding:8px;color:#8896AA;font-size:12px;text-align:center">Вставить текст (Название;Кол-во;Срок)</button><div id="sp2" style="display:none;margin-top:7px"><textarea id="spt2" class="inp" style="height:75px;margin-bottom:7px;font-family:monospace;font-size:11px;resize:vertical" placeholder="Гиалуроновая к-та;500;2025-12-01&#10;Глицерин;1200"></textarea><div style="display:flex;gap:7px"><button class="abtn" style="flex:1" onclick="lSt()">Загрузить</button><button class="abtn-s" onclick="tp('sp2')">Отмена</button></div></div>${S.stock.length?`<div style="font-size:11px;color:#38A169;margin-top:7px;font-weight:600">Загружено ${S.stock.length} позиций</div>`:''}</div><input id="ss2" class="inp" placeholder="Поиск позиции..." oninput="rSL()" style="margin-bottom:9px"><div id="sl2"></div>`;setTimeout(rSL,0);}
+function rSt(){
+  const hasData = S.stock.length > 0;
+  return`
+  ${!hasData ? `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center;color:#8896AA">
+    <div style="font-size:40px;opacity:.2;margin-bottom:12px">📊</div>
+    <div style="font-weight:700;font-size:15px;color:#0F1829;margin-bottom:6px">Загрузите остатки из 1С</div>
+    <div style="font-size:12px;margin-bottom:24px;line-height:1.6">Файл CSV/TXT или вставьте текст<br>в формате Название;Кол-во;Срок</div>
+  </div>` : ''}
+  <div class="card" style="padding:13px;margin-bottom:9px">
+    ${hasData ? `<div class="slbl">Остатки из 1С</div>` : ''}
+    <label style="display:block;background:#F8FAFF;border:1.5px dashed #D0D8E8;border-radius:7px;padding:10px;text-align:center;cursor:pointer;font-size:12px;color:#8896AA;margin-bottom:7px">Загрузить файл (CSV/TXT)<input type="file" accept=".csv,.tsv,.txt" style="display:none" onchange="l1f(this)"></label>
+    <button onclick="tp('sp2')" style="width:100%;background:#F8FAFF;border:1.5px solid #E0E8F4;border-radius:7px;padding:8px;color:#8896AA;font-size:12px;text-align:center">Вставить текст (Название;Кол-во;Срок)</button>
+    <div id="sp2" style="display:none;margin-top:7px"><textarea id="spt2" class="inp" style="height:75px;margin-bottom:7px;font-family:monospace;font-size:11px;resize:vertical" placeholder="Гиалуроновая к-та;500;2025-12-01&#10;Глицерин;1200"></textarea><div style="display:flex;gap:7px"><button class="abtn" style="flex:1" onclick="lSt()">Загрузить</button><button class="abtn-s" onclick="tp('sp2')">Отмена</button></div></div>
+    ${S.stock.length?`<div style="font-size:11px;color:#38A169;margin-top:7px;font-weight:600">Загружено ${S.stock.length} позиций</div>`:''}
+  </div>
+  ${hasData ? `<input id="ss2" class="inp" placeholder="Поиск позиции..." oninput="rSL()" style="margin-bottom:9px"><div id="sl2"></div>` : ''}`;
+  setTimeout(rSL,0);
+}
 function rSL(){const q=(document.getElementById('ss2')||{}).value||'';const el=document.getElementById('sl2');if(!el)return;if(!S.stock.length){el.innerHTML=`<div style="text-align:center;color:#8896AA;padding:28px;background:#fff;border:1px solid #E8ECF2;border-radius:11px">Загрузите выгрузку из 1С</div>`;return;}const f=S.stock.filter(x=>fz(q,x.tradeName)||(x.inci&&fz(q,x.inci)));el.innerHTML=f.slice(0,25).map(ing=>`<div class="card" style="padding:10px 13px;margin-bottom:7px"><div style="font-weight:600;font-size:13px;margin-bottom:3px;color:#0F1829">${h(ing.tradeName)}</div><div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">${ing.spotId?`<span class="loc">&#128205; ${h(gsp(ing.spotId))}</span>`:`<span class="tag tgr">Место не задано</span>`}${ing.barcode?'<span class="tag tb">штрих-код</span>':''}${eb(ing.expiry)}${ing.qty>0?`<span class="tag tgr">${ing.qty}г</span>`:''}</div></div>`).join('')+(f.length>25?`<div style="text-align:center;color:#8896AA;font-size:11px;padding:7px">Уточните поиск — ${f.length} позиций</div>`:'');}
 function rPk(){const sh=S.sheets.length>1?`<div style="margin-bottom:9px"><div class="slbl">Вкладки (${S.sheets.length})</div><div class="stabs">${S.sheets.map((s,i)=>`<button class="stab ${i===S.as?'a':''}" onclick="selSh(${i})">${h(s.name)} (${s.items.length})</button>`).join('')}</div></div>`:'';return`<div class="card" style="padding:13px;margin-bottom:9px"><div class="slbl">Тех карта</div><label style="display:block;background:#F8FAFF;border:1.5px dashed #D0D8E8;border-radius:7px;padding:10px;text-align:center;cursor:pointer;font-size:12px;color:#8896AA;margin-bottom:7px">Загрузить Excel (.xlsx)<input type="file" accept=".xlsx,.xls" style="display:none" onchange="lXl(this)"></label>${sh}<button onclick="tp('tp2')" style="width:100%;background:#F8FAFF;border:1.5px solid #E0E8F4;border-radius:7px;padding:8px;color:#8896AA;font-size:12px;text-align:center">Вставить из Excel (Фаза · Торговое · INCI · %)</button><div id="tp2" style="display:none;margin-top:7px"><textarea id="tpt2" class="inp" style="height:85px;margin-bottom:7px;font-family:monospace;font-size:11px;resize:vertical" placeholder="A&#9;Вода&#9;Aqua&#9;&#9;18.98&#10;&#9;Глицерин&#9;Glycerin&#9;&#9;5.0"></textarea><div style="display:flex;gap:7px"><button class="abtn" style="flex:1" onclick="lTt()">Загрузить</button><button class="abtn-s" onclick="tp('tp2')">Отмена</button></div></div>${S.tech.length?`<div style="font-size:11px;color:#38A169;margin-top:7px;font-weight:600">${h(S.pn2||'Продукт')} — ${S.tech.length} позиций</div>`:''}</div>${S.tech.length?`<div style="margin-bottom:11px"><label class="lbl">Масса партии (г / мл)</label><input id="bm2" class="inp" type="number" value="${h(S.bm)}" placeholder="15000" oninput="S.bm=this.value;rPI()"></div><div id="pick-prog" style="margin-bottom:10px"></div>
-  <div id="pi2">${rPIhtml()}</div>`:`<div style="text-align:center;color:#8896AA;padding:36px;background:#fff;border:1px solid #E8ECF2;border-radius:11px">Загрузите тех карту</div>`}`;} 
+  <div id="pi2">${rPIhtml()}</div>`:`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px 20px;text-align:center"><div style="font-size:40px;opacity:.2;margin-bottom:12px">&#128203;</div><div style="font-weight:700;font-size:15px;color:#0F1829;margin-bottom:6px">Загрузите тех карту</div><div style="font-size:12px;color:#8896AA;line-height:1.6">Файл Excel .xlsx или вставьте<br>скопированные ячейки</div></div>`}`;} 
 function toggleCheck(ph,trade){
   const key=ph+'_'+trade;
   S.checked[key]=!S.checked[key];
@@ -443,7 +492,7 @@ else if(ss?.type==='link'||(S.sm==='link'&&S.lb)){const bc=S.lb||ss?.barcode||''
   <button onclick="createAndLinkIng('${h(bc)}')" style="width:100%;background:#1E6BE6;color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px #1E6BE625">Создать и привязать штрих-код</button>
 </div>`;setTimeout(rLR,0);}
 else if(ss?.type==='linked'){res=`<div style="background:#F0FFF4;border:1.5px solid #9AE6B4;border-radius:11px;padding:13px;text-align:center;margin-bottom:9px"><div style="font-size:16px;font-weight:800;color:#38A169">Привязано</div><div style="font-size:12px;color:#6B7A8D;margin-top:3px">${h(ss.name||'')}</div></div>`;}
-return`<div style="display:flex;gap:7px;margin-bottom:11px"><button onclick="S.sm='find';S.ss=null;S.lb=null;stSc();rT()" style="flex:1;padding:8px;border-radius:7px;border:1.5px solid ${S.sm==='find'?'#1E6BE6':'#E8ECF2'};background:${S.sm==='find'?'#EBF5FF':'#F8FAFF'};color:${S.sm==='find'?'#1E6BE6':'#6B7A8D'};font-size:11px;font-weight:${S.sm==='find'?700:500};cursor:pointer">Найти позицию</button><button onclick="S.sm='link';S.ss=null;S.lb=null;stSc();rT()" style="flex:1;padding:8px;border-radius:7px;border:1.5px solid ${S.sm==='link'?'#1E6BE6':'#E8ECF2'};background:${S.sm==='link'?'#EBF5FF':'#F8FAFF'};color:${S.sm==='link'?'#1E6BE6':'#6B7A8D'};font-size:11px;font-weight:${S.sm==='link'?700:500};cursor:pointer">Привязать код</button></div>
+return`<div style="height:20px"></div><div style="display:flex;gap:7px;margin-bottom:11px"><button onclick="S.sm='find';S.ss=null;S.lb=null;stSc();rT()" style="flex:1;padding:8px;border-radius:7px;border:1.5px solid ${S.sm==='find'?'#1E6BE6':'#E8ECF2'};background:${S.sm==='find'?'#EBF5FF':'#F8FAFF'};color:${S.sm==='find'?'#1E6BE6':'#6B7A8D'};font-size:11px;font-weight:${S.sm==='find'?700:500};cursor:pointer">Найти позицию</button><button onclick="S.sm='link';S.ss=null;S.lb=null;stSc();rT()" style="flex:1;padding:8px;border-radius:7px;border:1.5px solid ${S.sm==='link'?'#1E6BE6':'#E8ECF2'};background:${S.sm==='link'?'#EBF5FF':'#F8FAFF'};color:${S.sm==='link'?'#1E6BE6':'#6B7A8D'};font-size:11px;font-weight:${S.sm==='link'?700:500};cursor:pointer">Привязать код</button></div>
 <div class="sb" style="padding:0;overflow:hidden;position:relative"><div id="lv-wrap" style="position:relative;min-height:0"></div><div style="padding:16px 18px"><div style="color:rgba(255,255,255,.9);font-size:12px;font-weight:600">${S.sm==='find'?'Наведите камеру на штрих-код':'Сканируйте для привязки'}</div><div id="ssb" style="color:rgba(255,255,255,.6);font-size:10px;margin-top:6px;min-height:13px"></div><button id="sst" class="sbtn" style="margin-top:8px" onclick="stSc2()">Включить камеру</button><button id="ssp" class="sbtn" style="display:none;margin-top:8px;background:#EBF5FF;color:#1E6BE6" onclick="stSc();document.getElementById('sst').style.display='block';document.getElementById('ssp').style.display='none'">Остановить</button></div></div>
 <div class="mbox"><div class="slbl">Ввести вручную</div><div style="display:flex;gap:7px"><input id="mbc2" class="inp" type="number" inputmode="numeric" placeholder="Цифры со штрих-кода" style="flex:1;font-size:14px" onkeydown="if(event.key==='Enter'){aMBC();event.preventDefault()}"><button class="abtn" onclick="aMBC()">Найти</button></div>${!S.tech.length&&S.sm==='find'?'<div style="font-size:10px;color:#DD6B20;margin-top:7px">Загрузите тех карту во вкладке Сборка</div>':''}</div>${res}`;}
 function selectNewIngType(btn,type){
@@ -571,11 +620,11 @@ function dSh(id){sD('Удалить полку?',()=>{const pids=S.spots.filter(
 function dSp(id){sD('Удалить место?',()=>{S.meta=S.meta.map(x=>x.spotId===id?{...x,spotId:''}:x);S.spots=S.spots.filter(x=>x.id!==id);sv();cM();rT();});}
 function sD(msg,fn){S.modal='del';S.dm=msg;S.df=fn;rM();oM();}
 function oM(){document.getElementById('mov').classList.remove('hidden');}
-function cM(){stopAssignScanner();document.getElementById('mov').classList.add('hidden');S.modal=null;}
+function cM(){stopAssignScanner();stopManualBCScanner();document.getElementById('mov').classList.add('hidden');S.modal=null;}
 function cbg(e){if(e.target===document.getElementById('mov'))cM();}
 function om(type,pid){S.modal=type;S.eid=null;S.mpid=pid||null;S.mf2={name:'',color:'',type:''};rM();oM();}
 function oe(type,id){S.modal=type;S.eid=id;let item;if(type==='room')item=S.rooms.find(x=>x.id===id);else if(type==='rack')item=S.racks.find(x=>x.id===id);else if(type==='shelf')item=S.shelves.find(x=>x.id===id);else if(type==='spot')item=S.spots.find(x=>x.id===id);S.mf2={name:item?.name||'',color:item?.color||'',type:item?.type||''};rM();oM();}
-function oas(sid){S.modal='assign';S.sid=sid;S.am=S.stock.length?'search':'manual';S.as2='';S.mf={name:'',inci:'',expiry:'',qty:'',type:''};S.scanDone=null;rM();oM();}
+function oas(sid){S.modal='assign';S.sid=sid;S.am=S.stock.length?'search':'manual';S.as2='';S.mf={name:'',inci:'',expiry:'',qty:'',type:'',pkg:'',bc:''};S.scanDone=null;rM();oM();}
 function oei(name){const m=S.meta.find(x=>x.tradeName===name)||{tradeName:name};S.modal='editIng';S.ein=name;S.eif={tradeName:m.tradeName||'',inci:m.inci||'',expiry:m.expiry||'',qty:m.qty||'',type:m.type||'',pkg:m.pkg||'',barcode:m.barcode||''};rM();oM();}
 function rM(){
 const box=document.getElementById('mb2');const t=S.modal;
@@ -596,7 +645,17 @@ function rAM(){const path=gsp(S.sid)||'—';const mf=S.mf;const tabs=S.stock.len
 if(S.am==='search'){const res=S.stock.filter(x=>S.as2&&(fz(S.as2,x.tradeName)||(x.inci&&fz(S.as2,x.inci)))).slice(0,15);content=`<input class="inp" placeholder="Поиск: гиалур... или hyal..." value="${h(S.as2)}" oninput="S.as2=this.value;uAR()" style="margin-bottom:7px"><div id="ar2" style="max-height:240px;overflow-y:auto">${!S.as2?`<div style="font-size:11px;color:#8896AA;padding:10px;text-align:center">Начните вводить название</div>`:''
 }${S.as2&&!res.length?`<div style="font-size:11px;color:#8896AA;padding:10px;text-align:center">Не найдено — <a style="color:#1E6BE6;cursor:pointer" onclick="S.am='manual';S.mf.name=S.as2;rM()">добавить вручную</a></div>`:''
 }${res.map(x=>`<div onclick="dA('${h(x.tradeName)}')" style="padding:8px 11px;border-radius:7px;margin-bottom:3px;cursor:pointer;background:#F8FAFF;border:1.5px solid #E8ECF2;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:600;font-size:12px;color:#0F1829">${h(x.tradeName)}</div><div style="display:flex;gap:3px;margin-top:2px">${eb(x.expiry)}${x.qty>0?`<span class="tag tgr">${x.qty}г</span>`:''}</div></div><span style="color:#1E6BE6;font-size:16px">+</span></div>`).join('')}</div>`;}
-else if(S.am==='manual'){content=`${S.scanDone?.notFound?`<div style="background:#EBF5FF;border:1px solid #C5D8FF;border-radius:7px;padding:8px 11px;margin-bottom:9px;font-size:11px;color:#4A5568">Штрих-код будет привязан: <strong style="color:#1E6BE6">${h((S.scanDone.barcode||'').slice(-10))}</strong></div>`:''}<div class="fg"><label class="lbl">Название *</label><input id="mfin" class="inp" value="${h(mf.name)}" placeholder="Гиалуроновая кислота LMW" oninput="S.mf.name=this.value"></div><div class="fg"><label class="lbl">INCI</label><input class="inp" value="${h(mf.inci)}" placeholder="Sodium Hyaluronate" oninput="S.mf.inci=this.value"></div><label class="lbl">Тип</label><div class="tp" style="margin-bottom:9px">${TYP.map(tp=>`<button class="tpi ${mf.type===tp?'a':''}" onclick="S.mf.type='${tp}';rM()">${tp}</button>`).join('')}</div><label class="lbl">Упаковка <span style="color:#8896AA;font-weight:400">(необязательно)</span></label><div class="tp" style="margin-bottom:9px">${PKG.map(pk=>`<button class="tpi ${(mf.pkg||'')==pk?'a':''}" onclick="S.mf.pkg='${pk}';rM()">${pk}</button>`).join('')}</div><div style="display:flex;gap:7px;margin-bottom:11px"><div style="flex:1"><label class="lbl">Срок годности</label><input class="inp" type="date" value="${h(mf.expiry)}" oninput="S.mf.expiry=this.value"></div><div style="flex:1"><label class="lbl">Остаток (г)</label><input class="inp" type="number" value="${h(mf.qty)}" placeholder="500" oninput="S.mf.qty=this.value"></div></div><button class="abtn" style="width:100%" onclick="sMI()">Сохранить</button>`;}
+else if(S.am==='manual'){content=`${S.scanDone?.notFound?`<div style="background:#EBF5FF;border:1px solid #C5D8FF;border-radius:7px;padding:8px 11px;margin-bottom:9px;font-size:11px;color:#4A5568">Штрих-код будет привязан: <strong style="color:#1E6BE6">${h((S.scanDone.barcode||'').slice(-10))}</strong></div>`:''}<div class="fg"><label class="lbl">Название *</label><input id="mfin" class="inp" value="${h(mf.name)}" placeholder="Гиалуроновая кислота LMW" oninput="S.mf.name=this.value"></div><div class="fg"><label class="lbl">INCI</label><input class="inp" value="${h(mf.inci)}" placeholder="Sodium Hyaluronate" oninput="S.mf.inci=this.value"></div><label class="lbl">Тип</label><div class="tp" style="margin-bottom:9px">${TYP.map(tp=>`<button class="tpi ${mf.type===tp?'a':''}" onclick="S.mf.type='${tp}';rM()">${tp}</button>`).join('')}</div><label class="lbl">Упаковка <span style="color:#8896AA;font-weight:400">(необязательно)</span></label><div class="tp" style="margin-bottom:9px">${PKG.map(pk=>`<button class="tpi ${(mf.pkg||'')==pk?'a':''}" onclick="S.mf.pkg='${pk}';rM()">${pk}</button>`).join('')}</div><div style="display:flex;gap:7px;margin-bottom:11px"><div style="flex:1"><label class="lbl">Срок годности</label><input class="inp" type="date" value="${h(mf.expiry)}" oninput="S.mf.expiry=this.value"></div><div style="flex:1"><label class="lbl">Остаток (г)</label><input class="inp" type="number" value="${h(mf.qty)}" placeholder="500" oninput="S.mf.qty=this.value"></div></div>
+    <label class="lbl">Штрих-код <span style="color:#8896AA;font-weight:400">(необязательно)</span></label>
+    <div style="display:flex;gap:8px;margin-bottom:6px">
+      <input id="mf-bc" class="inp" type="number" inputmode="numeric" value="${h(mf.bc||'')}" placeholder="Введите цифры" style="flex:1;font-size:15px" oninput="S.mf.bc=this.value">
+      <button onclick="openManualBCScanner()" style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:8px;background:#EBF5FF;border:1.5px solid #C5D8FF;cursor:pointer;flex-shrink:0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1E6BE6" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </button>
+    </div>
+    <div id="mf-cam-wrap" style="display:none;margin-bottom:8px;border-radius:8px;overflow:hidden;border:1.5px solid #1E6BE6"></div>
+    <div id="mf-bc-status" style="font-size:11px;color:#8896AA;margin-bottom:12px">Сканируйте камерой или введите цифры вручную</div>
+    <button class="abtn" style="width:100%;padding:12px;font-size:14px" onclick="sMI()">Сохранить</button>`;}
 else{content=`<div style="padding:0">
   <div style="background:linear-gradient(135deg,#1E6BE6,#0F4FC4);border-radius:10px;overflow:hidden;margin-bottom:10px">
     <div id="as-lv-wrap" style="min-height:0"></div>
@@ -618,7 +677,7 @@ function uAR(){const el=document.getElementById('ar2');if(!el)return;const res=S
 (S.as2&&!res.length?`<div style="font-size:11px;color:#8896AA;padding:10px;text-align:center">Не найдено — <a style="color:#1E6BE6;cursor:pointer" onclick="S.am='manual';S.mf.name=S.as2;rM()">вручную</a></div>`:'')+
 res.map(x=>`<div onclick="dA('${h(x.tradeName)}')" style="padding:8px 11px;border-radius:7px;margin-bottom:3px;cursor:pointer;background:#F8FAFF;border:1.5px solid #E8ECF2;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:600;font-size:12px;color:#0F1829">${h(x.tradeName)}</div><div style="display:flex;gap:3px;margin-top:2px">${eb(x.expiry)}${x.qty>0?`<span class="tag tgr">${x.qty}г</span>`:''}</div></div><span style="color:#1E6BE6;font-size:16px">+</span></div>`).join('');}
 function dA(name){svm(name,{spotId:S.sid});cM();rT();}
-function sMI(){const name=(document.getElementById('mfin')||{}).value?.trim()||S.mf.name?.trim();if(!name)return;svm(name,{spotId:S.sid,inci:S.mf.inci,expiry:S.mf.expiry,qty:parseFloat(S.mf.qty)||0,type:S.mf.type,pkg:S.mf.pkg||'',barcode:S.scanDone?.barcode||''});cM();rT();}
+function sMI(){const name=(document.getElementById('mfin')||{}).value?.trim()||S.mf.name?.trim();if(!name)return;svm(name,{spotId:S.sid,inci:S.mf.inci,expiry:S.mf.expiry,qty:parseFloat(S.mf.qty)||0,type:S.mf.type,pkg:S.mf.pkg||'',barcode:S.mf.bc||S.scanDone?.barcode||''});cM();rT();}
 function rEIM(){const f=S.eif;return`<div class="mt">Редактировать позицию</div><div class="ms2">Изменение данных</div><div class="fg"><label class="lbl">Название</label><input class="inp" value="${h(f.tradeName)}" oninput="S.eif.tradeName=this.value"></div><div class="fg"><label class="lbl">INCI</label><input class="inp" value="${h(f.inci)}" placeholder="Sodium Hyaluronate" oninput="S.eif.inci=this.value"></div><label class="lbl">Тип</label><div class="tp" style="margin-bottom:9px">${TYP.map(tp=>`<button class="tpi ${f.type===tp?'a':''}" onclick="S.eif.type='${tp}';rM()">${tp}</button>`).join('')}</div><label class="lbl">Упаковка <span style="color:#8896AA;font-weight:400">(необязательно)</span></label><div class="tp" style="margin-bottom:10px">${PKG.map(pk=>`<button class="tpi ${(f.pkg||'')==pk?'a':''}" onclick="S.eif.pkg='${pk}';rM()">${pk}</button>`).join('')}</div><div style="display:flex;gap:7px;margin-bottom:10px"><div style="flex:1"><label class="lbl">Срок годности</label><input class="inp" type="date" value="${h(f.expiry)}" oninput="S.eif.expiry=this.value"></div><div style="flex:1"><label class="lbl">Остаток (г)</label><input class="inp" type="number" value="${h(f.qty)}" placeholder="500" oninput="S.eif.qty=this.value"></div></div><label class="lbl">Штрих-код</label><div style="display:flex;gap:7px;margin-bottom:5px"><input id="bci" class="inp" type="number" inputmode="numeric" value="${h(f.barcode)}" placeholder="Введите цифры или сканируйте" style="flex:1;font-size:14px" oninput="S.eif.barcode=this.value"><label style="display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:7px;background:#EBF5FF;border:1.5px solid #C5D8FF;cursor:pointer;flex-shrink:0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1E6BE6" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><input type="file" accept="image/*" capture="environment" style="display:none" onchange="sFE(this)"></label></div><div id="bcst" style="font-size:10px;color:#8896AA;margin-bottom:12px">Введите цифры или сфотографируйте</div><div style="display:flex;gap:7px"><button class="abtn" style="flex:1" onclick="sEI()">Сохранить</button><button class="abtn-s" onclick="cM()">Отмена</button></div>`;}
 function sEI(){const f=S.eif;const name=f.tradeName.trim();if(!name)return;if(name!==S.ein){const i=S.meta.findIndex(x=>x.tradeName===S.ein);if(i>=0)S.meta[i]={...S.meta[i],tradeName:name};}
 // If barcode changed, remove it from previous owner
@@ -676,6 +735,51 @@ function processAssignBC(bc){
   const found=S.stock.find(x=>x.barcode===bc)||S.meta.find(x=>x.barcode===bc);
   if(found){dA(found.tradeName);}
   else{S.scanDone={barcode:bc,notFound:true};S.am='manual';rM();}
+}
+let _mfStr=null,_mfTmr=null;
+function openManualBCScanner(){
+  const wrap=document.getElementById('mf-cam-wrap');
+  if(!wrap)return;
+  // Toggle
+  if(_mfStr){stopManualBCScanner();return;}
+  const v=document.getElementById('lv');if(!v)return;
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}}).then(stream=>{
+    _mfStr=stream;v.srcObject=stream;v.play();
+    wrap.appendChild(v);wrap.style.display='block';
+    v.style.cssText='width:100%;height:180px;object-fit:cover;display:block;';
+    const st=document.getElementById('mf-bc-status');
+    if(st){st.textContent='Наведите камеру на штрих-код...';st.style.color='#1E6BE6';}
+    // Change button icon to stop
+    const btn=wrap.previousElementSibling?.querySelector('button');
+    _mfTmr=setInterval(()=>{
+      if(v.readyState<2)return;
+      const cv=document.getElementById('scan-cv');if(!cv)return;
+      cv.width=v.videoWidth;cv.height=v.videoHeight;
+      cv.getContext('2d').drawImage(v,0,0);
+      const id=cv.getContext('2d').getImageData(0,0,cv.width,cv.height);
+      if(window.jsQR){const r=window.jsQR(id.data,id.width,id.height,{inversionAttempts:'dontInvert'});if(r){applyManualBC(r.data);return;}}
+      if(window.ZXing){try{const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.QR_CODE]);hints.set(ZXing.DecodeHintType.TRY_HARDER,false);const rd=new ZXing.MultiFormatReader();rd.setHints(hints);const ls=new ZXing.HTMLCanvasElementLuminanceSource(cv);const res=rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));if(res){applyManualBC(res.getText());return;}}catch(e){}}
+    },400);
+  }).catch(e=>{
+    const st=document.getElementById('mf-bc-status');
+    if(st){st.textContent='Камера недоступна: '+e.message;st.style.color='#E53E3E';}
+  });
+}
+function stopManualBCScanner(){
+  clearInterval(_mfTmr);_mfTmr=null;
+  if(_mfStr){_mfStr.getTracks().forEach(t=>t.stop());_mfStr=null;}
+  const v=document.getElementById('lv');
+  if(v){v.style.display='none';v.srcObject=null;document.body.appendChild(v);}
+  const wrap=document.getElementById('mf-cam-wrap');
+  if(wrap){wrap.style.display='none';}
+}
+function applyManualBC(bc){
+  stopManualBCScanner();
+  S.mf.bc=bc;
+  const el=document.getElementById('mf-bc');
+  if(el){el.value=bc;el.style.borderColor='#38A169';el.style.color='#1E6BE6';}
+  const st=document.getElementById('mf-bc-status');
+  if(st){st.textContent='Считан: '+bc;st.style.color='#38A169';st.style.fontWeight='700';}
 }
 function hAS(input){const f=input.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{dBC(ev.target.result,bc=>{const found=S.stock.find(x=>x.barcode===bc)||S.meta.find(x=>x.barcode===bc);if(found)dA(found.tradeName);else{S.scanDone={barcode:bc,notFound:true};S.am='manual';rM();}},()=>{S.scanDone={error:'Не распознан. Попробуйте ближе.'};rM();});};r.readAsDataURL(f);input.value='';}
 
