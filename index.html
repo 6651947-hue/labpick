@@ -252,10 +252,11 @@ const REH=`<div class="aw"><div class="ab"><div class="alo"><div class="ai">ГЧ
 
 const VEH=`<div class="aw"><div class="ab" style="text-align:center"><div class="alo"><div class="ai">ГЧ</div></div><div class="vi">&#9993;</div><div class="atit">Подтвердите email</div><div class="asub" id="vs">Отправили код на <strong id="vel"></strong></div><div class="cr"><input class="ci" maxlength="1" type="text" inputmode="numeric" oninput="ci(this,0)" onkeydown="ck(this,event,0)"/><input class="ci" maxlength="1" type="text" inputmode="numeric" oninput="ci(this,1)" onkeydown="ck(this,event,1)"/><input class="ci" maxlength="1" type="text" inputmode="numeric" oninput="ci(this,2)" onkeydown="ck(this,event,2)"/><input class="ci" maxlength="1" type="text" inputmode="numeric" oninput="ci(this,3)" onkeydown="ck(this,event,3)"/></div><div class="err" id="cerr" style="text-align:center;margin-bottom:8px;display:none">Неверный код</div><div style="font-size:12px;color:#38A169;text-align:center;margin-bottom:8px;display:none" id="cok">Код подтверждён!</div><button class="btn-blue" onclick="vC()">Подтвердить</button><div class="alink" style="margin-top:12px">Не получили? <a onclick="rC()">Отправить повторно</a></div><div style="font-size:10px;color:#C0C8D8;margin-top:8px">Для демо введите: <strong>1234</strong></div></div></div>`;
 
-const S={u:null,pe:null,pn:null,rooms:[],racks:[],shelves:[],spots:[],meta:[],stock:[],tech:[],sheets:[],as:0,pn2:'',bm:'',sm:'find',ss:null,lb:null,lt:null,sid:null,am:'search',as2:'',mf:{},ein:null,eif:{},modal:null,mf2:{},eid:null,mpid:null,dm:'',df:null,tab:'warehouse',hi:null,checked:{}};
+const S={u:null,pe:null,pn:null,rooms:[],racks:[],shelves:[],spots:[],meta:[],stock:[],tech:[],sheets:[],as:0,pn2:'',bm:'',sm:'find',ss:null,lb:null,lt:null,sid:null,am:'search',as2:'',mf:{},ein:null,eif:{},modal:null,mf2:{},eid:null,mpid:null,dm:'',df:null,tab:'warehouse',hi:null,checked:{},inv:{active:false,items:{},startedAt:null}};
 const EX={};
 const PAL=["#1E6BE6","#38A169","#DD6B20","#7C3AED","#E53E3E","#0891B2","#D97706","#059669","#DC2626","#6D28D9","#1E40AF","#065F46"];
-const TYP=["Порошок","Жидкость","Канистра","Гель","Масло","Воск","Прочее"];
+const TYP=["Порошок","Жидкость"];
+const PKG=["Пакет","Мешок","Банка","Канистра","Бутылка","Флакон"];
 const PHC={A:"#1E6BE6",А:"#1E6BE6",B:"#38A169",В:"#38A169",C:"#DD6B20",С:"#DD6B20",D:"#7C3AED",Д:"#7C3AED","?":"#8896AA"};
 const TR={а:"a",б:"b",в:"v",г:"g",д:"d",е:"e",ё:"yo",ж:"zh",з:"z",и:"i",й:"y",к:"k",л:"l",м:"m",н:"n",о:"o",п:"p",р:"r",с:"s",т:"t",у:"u",ф:"f",х:"h",ц:"ts",ч:"ch",ш:"sh",щ:"sch",ъ:"",ы:"y",ь:"",э:"e",ю:"yu",я:"ya"};
 const tl=s=>s.toLowerCase().split('').map(c=>TR[c]||c).join('');
@@ -293,16 +294,16 @@ function vC(){const code=Array.from(document.querySelectorAll('.ci')).map(x=>x.v
 function rC(){document.querySelectorAll('.ci').forEach(x=>x.value='');const el=document.getElementById('vs');if(el)el.innerHTML='Код отправлен повторно на <strong>'+h(S.pe||'')+'</strong>';document.querySelectorAll('.ci')[0]?.focus();}
 function ci(el,i){el.value=el.value.replace(/\D/g,'').slice(-1);if(el.value&&i<3)document.querySelectorAll('.ci')[i+1].focus();if(i===3&&el.value)vC();}
 function ck(el,e,i){if(e.key==='Backspace'&&!el.value&&i>0)document.querySelectorAll('.ci')[i-1].focus();}
-function rAS(){const u=S.u||{};return`<div class="an"><div class="alo2" onclick="sp('l')">Где<span>Что</span></div><div class="au"><span style="font-size:11px;color:#8896AA">${h(u.name||'')}</span><div class="ava">${(u.name||'U')[0].toUpperCase()}</div><button class="aex" onclick="sp('l')">Выйти</button></div></div><div class="ats" id="ats"><div class="at a" onclick="sT('warehouse')">Склад</div><div class="at" onclick="sT('stock')">Остатки 1С</div><div class="at" onclick="sT('pick')">Сборка</div><div class="at" onclick="sT('scan')">Сканер</div></div><div class="ab2" id="ab2"></div>`;}
-function sT(tab){S.tab=tab;if(tab!=='scan')stSc();document.querySelectorAll('.at').forEach((el,i)=>el.classList.toggle('a',['warehouse','stock','pick','scan'][i]===tab));rT();}
-function rT(){const el=document.getElementById('ab2');if(!el)return;if(S.tab==='warehouse')el.innerHTML=rW();else if(S.tab==='stock')el.innerHTML=rSt();else if(S.tab==='pick'){el.innerHTML=rPk();setTimeout(updateProgress,0);}else if(S.tab==='scan')el.innerHTML=rSc();}
+function rAS(){const u=S.u||{};return`<div class="an"><div class="alo2" onclick="sp('l')">Где<span>Что</span></div><div class="au"><span style="font-size:11px;color:#8896AA">${h(u.name||'')}</span><div class="ava">${(u.name||'U')[0].toUpperCase()}</div><button class="aex" onclick="sp('l')">Выйти</button></div></div><div class="ats" id="ats"><div class="at a" onclick="sT('warehouse')">Склад</div><div class="at" onclick="sT('stock')">Остатки 1С</div><div class="at" onclick="sT('pick')">Сборка</div><div class="at" onclick="sT('scan')">Сканер</div><div class="at" onclick="sT('inv')">Инвентаризация</div></div><div class="ab2" id="ab2"></div>`;}
+function sT(tab){S.tab=tab;if(tab!=='scan')stSc();if(tab!=='inv')stopInvCamera();document.querySelectorAll('.at').forEach((el,i)=>el.classList.toggle('a',['warehouse','stock','pick','scan'][i]===tab));rT();}
+function rT(){const el=document.getElementById('ab2');if(!el)return;if(S.tab==='warehouse')el.innerHTML=rW();else if(S.tab==='stock')el.innerHTML=rSt();else if(S.tab==='pick'){el.innerHTML=rPk();setTimeout(updateProgress,0);}else if(S.tab==='inv')el.innerHTML=rInv();else if(S.tab==='scan')el.innerHTML=rSc();}
 function rW(){let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px"><span class="slbl" style="margin:0">Структура склада</span><button class="abtn" style="font-size:10px;padding:6px 11px" onclick="om('room')">+ Помещение</button></div>`;
 if(!S.rooms.length)return html+`<div style="text-align:center;color:#8896AA;padding:44px 14px;background:#fff;border:1px solid #E8ECF2;border-radius:11px;line-height:2.2"><div style="font-size:36px;opacity:.2;margin-bottom:7px">[ ]</div>Добавьте первое помещение<br><span style="font-size:11px">Помещение — Стеллаж — Полка — Место</span></div>`;
 for(const room of S.rooms){const rr=S.racks.filter(r=>r.roomId===room.id);const ic=cri(room.id);const io=EX['r_'+room.id];html+=`<div class="card" style="border-left:3px solid ${room.color||PAL[0]}"><div class="ch" onclick="EX['r_${room.id}']=!EX['r_${room.id}'];rT()"><div class="cd" style="background:${room.color||PAL[0]}"></div><div style="flex:1;min-width:0"><div class="ct">${h(room.name)}</div><div class="cs">${rr.length} стеллажей · ${ic} позиций</div></div><button class="badd" onclick="event.stopPropagation();om('rack','${room.id}')">+ Стеллаж</button><button class="bico" onclick="event.stopPropagation();oe('room','${room.id}')">✏</button><button class="bico" onclick="event.stopPropagation();dR('${room.id}')">✕</button><span style="color:#C0C8D8;font-size:10px;flex-shrink:0">${io?'▲':'▼'}</span></div>${io?`<div class="chl">${rRa(room)}</div>`:''}</div>`;}
 return html;}
 function rRa(room){const items=S.racks.filter(r=>r.roomId===room.id);if(!items.length)return`<div style="font-size:11px;color:#8896AA;padding:7px 0">Нет стеллажей</div>`;return items.map(rack=>{const rs=S.shelves.filter(s=>s.rackId===rack.id);const ic=cra(rack.id);const io=EX['ra_'+rack.id];return`<div class="card" style="border-left:3px solid ${rack.color||PAL[1]};margin-bottom:5px"><div class="ch" onclick="EX['ra_${rack.id}']=!EX['ra_${rack.id}'];rT()"><div class="cd" style="background:${rack.color||PAL[1]}"></div><div style="flex:1;min-width:0"><div class="ct">${h(rack.name)}</div><div class="cs">${rs.length} полок · ${ic} позиций</div></div><button class="badd" style="font-size:8px;padding:2px 6px" onclick="event.stopPropagation();om('shelf','${rack.id}')">+ Полка</button><button class="bico" onclick="event.stopPropagation();oe('rack','${rack.id}')">✏</button><button class="bico" onclick="event.stopPropagation();dRa('${rack.id}')">✕</button><span style="color:#C0C8D8;font-size:10px;flex-shrink:0">${io?'▲':'▼'}</span></div>${io?`<div class="chl">${rSh(rack)}</div>`:''}</div>`;}).join('');}
 function rSh(rack){const items=S.shelves.filter(s=>s.rackId===rack.id);if(!items.length)return`<div style="font-size:11px;color:#8896AA;padding:7px 0">Нет полок</div>`;return items.map(shelf=>{const ss=S.spots.filter(s=>s.shelfId===shelf.id);const io=EX['sh_'+shelf.id];return`<div class="card" style="border-left:3px solid ${shelf.color||PAL[5]};margin-bottom:5px"><div class="ch" onclick="EX['sh_${shelf.id}']=!EX['sh_${shelf.id}'];rT()"><div class="cd" style="background:${shelf.color||PAL[5]}"></div><div style="flex:1;min-width:0"><div class="ct">${h(shelf.name)}</div><div class="cs">${ss.length} мест</div></div><button class="badd" style="font-size:8px;padding:2px 6px" onclick="event.stopPropagation();om('spot','${shelf.id}')">+ Место</button><button class="bico" onclick="event.stopPropagation();oe('shelf','${shelf.id}')">✏</button><button class="bico" onclick="event.stopPropagation();dSh('${shelf.id}')">✕</button><span style="color:#C0C8D8;font-size:10px;flex-shrink:0">${io?'▲':'▼'}</span></div>${io?`<div class="chl">${rSp(shelf)}</div>`:''}</div>`;}).join('');}
-function rSp(shelf){const items=S.spots.filter(s=>s.shelfId===shelf.id);if(!items.length)return`<div style="font-size:11px;color:#8896AA;padding:7px 0">Нет мест</div>`;return items.map(spot=>{const ings=gis(spot.id);const io=EX['sp_'+spot.id];const ih=ings.map(ing=>`<div class="ir" id="ing_${h(ing.tradeName)}" style="${S.hi===ing.tradeName?"border-left:2px solid #1E6BE6;background:#EBF5FF":""}"><div style="flex:1;min-width:0"><div class="in2">${h(ing.tradeName)}</div><div class="im">${ing.type?`<span class="tag tgr">${h(ing.type)}</span>`:''}${ing.inci?`<span class="tag tgr" style="font-style:italic">${h(ing.inci.slice(0,24))}</span>`:''}${eb(ing.expiry)}${ing.qty>0?`<span class="tag tgr">${ing.qty}г</span>`:''}${ing.barcode?'<span class="tag tb">штрих-код</span>':''}</div></div><div style="display:flex;gap:2px;margin-left:5px;flex-shrink:0"><button class="bico" onclick="oei('${h(ing.tradeName)}')">✏</button><button class="bico" onclick="svm('${h(ing.tradeName)}',{spotId:''});rT()">✕</button></div></div>`).join('');return`<div class="card" style="border-left:3px solid ${spot.color||PAL[6]};margin-bottom:5px"><div class="ch" onclick="EX['sp_${spot.id}']=!EX['sp_${spot.id}'];rT()"><div class="cd" style="background:${spot.color||PAL[6]}"></div><div style="flex:1;min-width:0"><div class="ct">${h(spot.name)}</div><div class="cs">${h(spot.type||'—')} · ${ings.length} позиций</div></div><button class="badd" style="font-size:8px;padding:2px 6px" onclick="event.stopPropagation();oas('${spot.id}')">+ Позицию</button><button class="bico" onclick="event.stopPropagation();oe('spot','${spot.id}')">✏</button><button class="bico" onclick="event.stopPropagation();dSp('${spot.id}')">✕</button><span style="color:#C0C8D8;font-size:10px;flex-shrink:0">${io?'▲':'▼'}</span></div>${io?`<div class="chl">${ings.length?ih:`<div style="font-size:11px;color:#8896AA;padding:5px 0">Пусто</div>`}</div>`:''}</div>`;}).join('');}
+function rSp(shelf){const items=S.spots.filter(s=>s.shelfId===shelf.id);if(!items.length)return`<div style="font-size:11px;color:#8896AA;padding:7px 0">Нет мест</div>`;return items.map(spot=>{const ings=gis(spot.id);const io=EX['sp_'+spot.id];const ih=ings.map(ing=>`<div class="ir" id="ing_${h(ing.tradeName)}" style="${S.hi===ing.tradeName?"border-left:2px solid #1E6BE6;background:#EBF5FF":""}"><div style="flex:1;min-width:0"><div class="in2">${h(ing.tradeName)}</div><div class="im">${ing.type?`<span class="tag tgr">${h(ing.type)}</span>`:''} ${ing.pkg?`<span class="tag tgr">${h(ing.pkg)}</span>`:''}${ing.inci?`<span class="tag tgr" style="font-style:italic">${h(ing.inci.slice(0,24))}</span>`:''}${eb(ing.expiry)}${ing.qty>0?`<span class="tag tgr">${ing.qty}г</span>`:''}${ing.barcode?'<span class="tag tb">штрих-код</span>':''}</div></div><div style="display:flex;gap:2px;margin-left:5px;flex-shrink:0"><button class="bico" onclick="oei('${h(ing.tradeName)}')">✏</button><button class="bico" onclick="svm('${h(ing.tradeName)}',{spotId:''});rT()">✕</button></div></div>`).join('');return`<div class="card" style="border-left:3px solid ${spot.color||PAL[6]};margin-bottom:5px"><div class="ch" onclick="EX['sp_${spot.id}']=!EX['sp_${spot.id}'];rT()"><div class="cd" style="background:${spot.color||PAL[6]}"></div><div style="flex:1;min-width:0"><div class="ct">${h(spot.name)}</div><div class="cs">${h(spot.type||'—')} · ${ings.length} позиций</div></div><button class="badd" style="font-size:8px;padding:2px 6px" onclick="event.stopPropagation();oas('${spot.id}')">+ Позицию</button><button class="bico" onclick="event.stopPropagation();oe('spot','${spot.id}')">✏</button><button class="bico" onclick="event.stopPropagation();dSp('${spot.id}')">✕</button><span style="color:#C0C8D8;font-size:10px;flex-shrink:0">${io?'▲':'▼'}</span></div>${io?`<div class="chl">${ings.length?ih:`<div style="font-size:11px;color:#8896AA;padding:5px 0">Пусто</div>`}</div>`:''}</div>`;}).join('');}
 function rSt(){return`<div class="card" style="padding:13px;margin-bottom:9px"><div class="slbl">Остатки из 1С</div><label style="display:block;background:#F8FAFF;border:1.5px dashed #D0D8E8;border-radius:7px;padding:10px;text-align:center;cursor:pointer;font-size:12px;color:#8896AA;margin-bottom:7px">Загрузить файл (CSV/TXT)<input type="file" accept=".csv,.tsv,.txt" style="display:none" onchange="l1f(this)"></label><button onclick="tp('sp2')" style="width:100%;background:#F8FAFF;border:1.5px solid #E0E8F4;border-radius:7px;padding:8px;color:#8896AA;font-size:12px;text-align:center">Вставить текст (Название;Кол-во;Срок)</button><div id="sp2" style="display:none;margin-top:7px"><textarea id="spt2" class="inp" style="height:75px;margin-bottom:7px;font-family:monospace;font-size:11px;resize:vertical" placeholder="Гиалуроновая к-та;500;2025-12-01&#10;Глицерин;1200"></textarea><div style="display:flex;gap:7px"><button class="abtn" style="flex:1" onclick="lSt()">Загрузить</button><button class="abtn-s" onclick="tp('sp2')">Отмена</button></div></div>${S.stock.length?`<div style="font-size:11px;color:#38A169;margin-top:7px;font-weight:600">Загружено ${S.stock.length} позиций</div>`:''}</div><input id="ss2" class="inp" placeholder="Поиск позиции..." oninput="rSL()" style="margin-bottom:9px"><div id="sl2"></div>`;setTimeout(rSL,0);}
 function rSL(){const q=(document.getElementById('ss2')||{}).value||'';const el=document.getElementById('sl2');if(!el)return;if(!S.stock.length){el.innerHTML=`<div style="text-align:center;color:#8896AA;padding:28px;background:#fff;border:1px solid #E8ECF2;border-radius:11px">Загрузите выгрузку из 1С</div>`;return;}const f=S.stock.filter(x=>fz(q,x.tradeName)||(x.inci&&fz(q,x.inci)));el.innerHTML=f.slice(0,25).map(ing=>`<div class="card" style="padding:10px 13px;margin-bottom:7px"><div style="font-weight:600;font-size:13px;margin-bottom:3px;color:#0F1829">${h(ing.tradeName)}</div><div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">${ing.spotId?`<span class="loc">&#128205; ${h(gsp(ing.spotId))}</span>`:`<span class="tag tgr">Место не задано</span>`}${ing.barcode?'<span class="tag tb">штрих-код</span>':''}${eb(ing.expiry)}${ing.qty>0?`<span class="tag tgr">${ing.qty}г</span>`:''}</div></div>`).join('')+(f.length>25?`<div style="text-align:center;color:#8896AA;font-size:11px;padding:7px">Уточните поиск — ${f.length} позиций</div>`:'');}
 function rPk(){const sh=S.sheets.length>1?`<div style="margin-bottom:9px"><div class="slbl">Вкладки (${S.sheets.length})</div><div class="stabs">${S.sheets.map((s,i)=>`<button class="stab ${i===S.as?'a':''}" onclick="selSh(${i})">${h(s.name)} (${s.items.length})</button>`).join('')}</div></div>`:'';return`<div class="card" style="padding:13px;margin-bottom:9px"><div class="slbl">Тех карта</div><label style="display:block;background:#F8FAFF;border:1.5px dashed #D0D8E8;border-radius:7px;padding:10px;text-align:center;cursor:pointer;font-size:12px;color:#8896AA;margin-bottom:7px">Загрузить Excel (.xlsx)<input type="file" accept=".xlsx,.xls" style="display:none" onchange="lXl(this)"></label>${sh}<button onclick="tp('tp2')" style="width:100%;background:#F8FAFF;border:1.5px solid #E0E8F4;border-radius:7px;padding:8px;color:#8896AA;font-size:12px;text-align:center">Вставить из Excel (Фаза · Торговое · INCI · %)</button><div id="tp2" style="display:none;margin-top:7px"><textarea id="tpt2" class="inp" style="height:85px;margin-bottom:7px;font-family:monospace;font-size:11px;resize:vertical" placeholder="A&#9;Вода&#9;Aqua&#9;&#9;18.98&#10;&#9;Глицерин&#9;Glycerin&#9;&#9;5.0"></textarea><div style="display:flex;gap:7px"><button class="abtn" style="flex:1" onclick="lTt()">Загрузить</button><button class="abtn-s" onclick="tp('tp2')">Отмена</button></div></div>${S.tech.length?`<div style="font-size:11px;color:#38A169;margin-top:7px;font-weight:600">${h(S.pn2||'Продукт')} — ${S.tech.length} позиций</div>`:''}</div>${S.tech.length?`<div style="margin-bottom:11px"><label class="lbl">Масса партии (г / мл)</label><input id="bm2" class="inp" type="number" value="${h(S.bm)}" placeholder="15000" oninput="S.bm=this.value;rPI()"></div><div id="pick-prog" style="margin-bottom:10px"></div>
@@ -570,12 +571,12 @@ function dSh(id){sD('Удалить полку?',()=>{const pids=S.spots.filter(
 function dSp(id){sD('Удалить место?',()=>{S.meta=S.meta.map(x=>x.spotId===id?{...x,spotId:''}:x);S.spots=S.spots.filter(x=>x.id!==id);sv();cM();rT();});}
 function sD(msg,fn){S.modal='del';S.dm=msg;S.df=fn;rM();oM();}
 function oM(){document.getElementById('mov').classList.remove('hidden');}
-function cM(){document.getElementById('mov').classList.add('hidden');S.modal=null;}
+function cM(){stopAssignScanner();document.getElementById('mov').classList.add('hidden');S.modal=null;}
 function cbg(e){if(e.target===document.getElementById('mov'))cM();}
 function om(type,pid){S.modal=type;S.eid=null;S.mpid=pid||null;S.mf2={name:'',color:'',type:''};rM();oM();}
 function oe(type,id){S.modal=type;S.eid=id;let item;if(type==='room')item=S.rooms.find(x=>x.id===id);else if(type==='rack')item=S.racks.find(x=>x.id===id);else if(type==='shelf')item=S.shelves.find(x=>x.id===id);else if(type==='spot')item=S.spots.find(x=>x.id===id);S.mf2={name:item?.name||'',color:item?.color||'',type:item?.type||''};rM();oM();}
 function oas(sid){S.modal='assign';S.sid=sid;S.am=S.stock.length?'search':'manual';S.as2='';S.mf={name:'',inci:'',expiry:'',qty:'',type:''};S.scanDone=null;rM();oM();}
-function oei(name){const m=S.meta.find(x=>x.tradeName===name)||{tradeName:name};S.modal='editIng';S.ein=name;S.eif={tradeName:m.tradeName||'',inci:m.inci||'',expiry:m.expiry||'',qty:m.qty||'',type:m.type||'',barcode:m.barcode||''};rM();oM();}
+function oei(name){const m=S.meta.find(x=>x.tradeName===name)||{tradeName:name};S.modal='editIng';S.ein=name;S.eif={tradeName:m.tradeName||'',inci:m.inci||'',expiry:m.expiry||'',qty:m.qty||'',type:m.type||'',pkg:m.pkg||'',barcode:m.barcode||''};rM();oM();}
 function rM(){
 const box=document.getElementById('mb2');const t=S.modal;
 if(t==='del'){box.innerHTML=`<div class="db"><div style="font-size:14px;font-weight:800;color:#E53E3E;margin-bottom:7px">Подтвердите удаление</div><div style="font-size:12px;color:#6B7A8D;margin-bottom:16px;line-height:1.5">${h(S.dm)}</div><div style="display:flex;gap:7px"><button style="flex:1;padding:10px;border-radius:7px;border:none;background:#E53E3E;color:#fff;font-weight:700;cursor:pointer" onclick="S.df&&S.df()">Удалить</button><button class="abtn-s" style="flex:1" onclick="cM()">Отмена</button></div></div>`;return;}
@@ -584,7 +585,7 @@ if(t==='editIng'){box.innerHTML=rEIM();return;}
 const isE=!!S.eid;const titles={room:['Новое помещение','Редактировать помещение'],rack:['Новый стеллаж','Редактировать стеллаж'],shelf:['Новая полка','Редактировать полку'],spot:['Новое место','Редактировать место']};const ph2={room:'Производственный цех',rack:'Стеллаж 1',shelf:'Полка верхняя',spot:'Место А1'};const f=S.mf2;
 let html=`<div class="mt">${titles[t]?.[isE?1:0]||''}</div><div class="ms2">${isE?'Измените нужные поля':'Заполните поля'}</div><div class="fg"><label class="lbl">Название</label><input id="mfn" class="inp" value="${h(f.name)}" placeholder="${ph2[t]||''}" onkeydown="if(event.key==='Enter')sM()"></div>`;
 if(['room','rack','shelf','spot'].includes(t)){html+=`<label class="lbl">Цвет</label><div class="sws">${PAL.map(col=>`<div class="sw ${f.color===col?'a':''}" style="background:${col}" onclick="S.mf2.color='${col}';S.mf2.name=document.getElementById('mfn')?.value||S.mf2.name;rM()"></div>`).join('')}</div>`;}
-if(t==='spot'){html+=`<label class="lbl">Тип хранения</label><div class="tp">${TYP.map(tp=>`<button class="tpi ${f.type===tp?'a':''}" onclick="S.mf2.type='${tp}';S.mf2.name=document.getElementById('mfn')?.value||S.mf2.name;rM()">${tp}</button>`).join('')}</div>`;}
+
 html+=`<div style="display:flex;gap:7px;margin-top:13px"><button class="abtn" style="flex:1" onclick="sM()">${isE?'Сохранить':'Добавить'}</button><button class="abtn-s" onclick="cM()">Отмена</button></div>`;
 box.innerHTML=html;setTimeout(()=>document.getElementById('mfn')?.focus(),70);}
 function sM(){const name=(document.getElementById('mfn')||{}).value?.trim();if(!name)return;const t=S.modal;const f={...S.mf2,name};
@@ -595,19 +596,34 @@ function rAM(){const path=gsp(S.sid)||'—';const mf=S.mf;const tabs=S.stock.len
 if(S.am==='search'){const res=S.stock.filter(x=>S.as2&&(fz(S.as2,x.tradeName)||(x.inci&&fz(S.as2,x.inci)))).slice(0,15);content=`<input class="inp" placeholder="Поиск: гиалур... или hyal..." value="${h(S.as2)}" oninput="S.as2=this.value;uAR()" style="margin-bottom:7px"><div id="ar2" style="max-height:240px;overflow-y:auto">${!S.as2?`<div style="font-size:11px;color:#8896AA;padding:10px;text-align:center">Начните вводить название</div>`:''
 }${S.as2&&!res.length?`<div style="font-size:11px;color:#8896AA;padding:10px;text-align:center">Не найдено — <a style="color:#1E6BE6;cursor:pointer" onclick="S.am='manual';S.mf.name=S.as2;rM()">добавить вручную</a></div>`:''
 }${res.map(x=>`<div onclick="dA('${h(x.tradeName)}')" style="padding:8px 11px;border-radius:7px;margin-bottom:3px;cursor:pointer;background:#F8FAFF;border:1.5px solid #E8ECF2;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:600;font-size:12px;color:#0F1829">${h(x.tradeName)}</div><div style="display:flex;gap:3px;margin-top:2px">${eb(x.expiry)}${x.qty>0?`<span class="tag tgr">${x.qty}г</span>`:''}</div></div><span style="color:#1E6BE6;font-size:16px">+</span></div>`).join('')}</div>`;}
-else if(S.am==='manual'){content=`${S.scanDone?.notFound?`<div style="background:#EBF5FF;border:1px solid #C5D8FF;border-radius:7px;padding:8px 11px;margin-bottom:9px;font-size:11px;color:#4A5568">Штрих-код будет привязан: <strong style="color:#1E6BE6">${h((S.scanDone.barcode||'').slice(-10))}</strong></div>`:''}<div class="fg"><label class="lbl">Название *</label><input id="mfin" class="inp" value="${h(mf.name)}" placeholder="Гиалуроновая кислота LMW" oninput="S.mf.name=this.value"></div><div class="fg"><label class="lbl">INCI</label><input class="inp" value="${h(mf.inci)}" placeholder="Sodium Hyaluronate" oninput="S.mf.inci=this.value"></div><label class="lbl">Тип</label><div class="tp" style="margin-bottom:9px">${TYP.map(tp=>`<button class="tpi ${mf.type===tp?'a':''}" onclick="S.mf.type='${tp}';rM()">${tp}</button>`).join('')}</div><div style="display:flex;gap:7px;margin-bottom:11px"><div style="flex:1"><label class="lbl">Срок годности</label><input class="inp" type="date" value="${h(mf.expiry)}" oninput="S.mf.expiry=this.value"></div><div style="flex:1"><label class="lbl">Остаток (г)</label><input class="inp" type="number" value="${h(mf.qty)}" placeholder="500" oninput="S.mf.qty=this.value"></div></div><button class="abtn" style="width:100%" onclick="sMI()">Сохранить</button>`;}
-else{content=`<div style="text-align:center;padding:14px 0"><label style="display:block;background:#1E6BE6;color:#fff;padding:11px;border-radius:9px;font-weight:700;font-size:13px;cursor:pointer">Сфотографировать штрих-код<input type="file" accept="image/*" capture="environment" style="display:none" onchange="hAS(this)"></label>${S.scanDone?.error?`<div style="color:#E53E3E;font-size:11px;margin-top:9px">${h(S.scanDone.error)}</div>`:''}</div>`;}
+else if(S.am==='manual'){content=`${S.scanDone?.notFound?`<div style="background:#EBF5FF;border:1px solid #C5D8FF;border-radius:7px;padding:8px 11px;margin-bottom:9px;font-size:11px;color:#4A5568">Штрих-код будет привязан: <strong style="color:#1E6BE6">${h((S.scanDone.barcode||'').slice(-10))}</strong></div>`:''}<div class="fg"><label class="lbl">Название *</label><input id="mfin" class="inp" value="${h(mf.name)}" placeholder="Гиалуроновая кислота LMW" oninput="S.mf.name=this.value"></div><div class="fg"><label class="lbl">INCI</label><input class="inp" value="${h(mf.inci)}" placeholder="Sodium Hyaluronate" oninput="S.mf.inci=this.value"></div><label class="lbl">Тип</label><div class="tp" style="margin-bottom:9px">${TYP.map(tp=>`<button class="tpi ${mf.type===tp?'a':''}" onclick="S.mf.type='${tp}';rM()">${tp}</button>`).join('')}</div><label class="lbl">Упаковка <span style="color:#8896AA;font-weight:400">(необязательно)</span></label><div class="tp" style="margin-bottom:9px">${PKG.map(pk=>`<button class="tpi ${(mf.pkg||'')==pk?'a':''}" onclick="S.mf.pkg='${pk}';rM()">${pk}</button>`).join('')}</div><div style="display:flex;gap:7px;margin-bottom:11px"><div style="flex:1"><label class="lbl">Срок годности</label><input class="inp" type="date" value="${h(mf.expiry)}" oninput="S.mf.expiry=this.value"></div><div style="flex:1"><label class="lbl">Остаток (г)</label><input class="inp" type="number" value="${h(mf.qty)}" placeholder="500" oninput="S.mf.qty=this.value"></div></div><button class="abtn" style="width:100%" onclick="sMI()">Сохранить</button>`;}
+else{content=`<div style="padding:0">
+  <div style="background:linear-gradient(135deg,#1E6BE6,#0F4FC4);border-radius:10px;overflow:hidden;margin-bottom:10px">
+    <div id="as-lv-wrap" style="min-height:0"></div>
+    <div style="padding:14px 16px;text-align:center">
+      <div style="color:rgba(255,255,255,.9);font-size:12px;font-weight:600;margin-bottom:10px">Наведите камеру на штрих-код</div>
+      <button id="as-start" onclick="startAssignScanner()" style="background:#fff;color:#1E6BE6;border:none;border-radius:7px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;width:100%">Включить камеру</button>
+      <button id="as-stop" onclick="stopAssignScanner()" style="display:none;background:#EBF5FF;color:#1E6BE6;border:none;border-radius:7px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;width:100%;margin-top:0">Остановить</button>
+    </div>
+  </div>
+  <div style="text-align:center;margin-bottom:8px;font-size:11px;color:#8896AA">или введите цифры вручную</div>
+  <div style="display:flex;gap:8px;margin-bottom:8px">
+    <input id="as-manual-bc" class="inp" type="number" inputmode="numeric" placeholder="Цифры со штрих-кода" style="flex:1;font-size:15px" onkeydown="if(event.key==='Enter'){applyAssignManualBC();event.preventDefault()}">
+    <button onclick="applyAssignManualBC()" class="abtn">Найти</button>
+  </div>
+  ${S.scanDone?.error?`<div style="color:#E53E3E;font-size:11px;margin-top:6px">${h(S.scanDone.error)}</div>`:''}
+</div>`;}
 return`<div class="mt">Добавить позицию</div><div class="ms2">Место: ${h(path)}</div><div class="mts">${tabs.map(([m,l])=>`<button class="mta ${S.am===m?'a':''}" onclick="S.am='${m}';S.scanDone=null;rM()">${l}</button>`).join('')}</div>${content}<button class="abtn-s" style="width:100%;margin-top:9px" onclick="cM()">Закрыть</button>`;}
 function uAR(){const el=document.getElementById('ar2');if(!el)return;const res=S.stock.filter(x=>S.as2&&(fz(S.as2,x.tradeName)||(x.inci&&fz(S.as2,x.inci)))).slice(0,15);el.innerHTML=(!S.as2?`<div style="font-size:11px;color:#8896AA;padding:10px;text-align:center">Начните вводить...</div>`:'')+
 (S.as2&&!res.length?`<div style="font-size:11px;color:#8896AA;padding:10px;text-align:center">Не найдено — <a style="color:#1E6BE6;cursor:pointer" onclick="S.am='manual';S.mf.name=S.as2;rM()">вручную</a></div>`:'')+
 res.map(x=>`<div onclick="dA('${h(x.tradeName)}')" style="padding:8px 11px;border-radius:7px;margin-bottom:3px;cursor:pointer;background:#F8FAFF;border:1.5px solid #E8ECF2;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:600;font-size:12px;color:#0F1829">${h(x.tradeName)}</div><div style="display:flex;gap:3px;margin-top:2px">${eb(x.expiry)}${x.qty>0?`<span class="tag tgr">${x.qty}г</span>`:''}</div></div><span style="color:#1E6BE6;font-size:16px">+</span></div>`).join('');}
 function dA(name){svm(name,{spotId:S.sid});cM();rT();}
-function sMI(){const name=(document.getElementById('mfin')||{}).value?.trim()||S.mf.name?.trim();if(!name)return;svm(name,{spotId:S.sid,inci:S.mf.inci,expiry:S.mf.expiry,qty:parseFloat(S.mf.qty)||0,type:S.mf.type,barcode:S.scanDone?.barcode||''});cM();rT();}
-function rEIM(){const f=S.eif;return`<div class="mt">Редактировать позицию</div><div class="ms2">Изменение данных</div><div class="fg"><label class="lbl">Название</label><input class="inp" value="${h(f.tradeName)}" oninput="S.eif.tradeName=this.value"></div><div class="fg"><label class="lbl">INCI</label><input class="inp" value="${h(f.inci)}" placeholder="Sodium Hyaluronate" oninput="S.eif.inci=this.value"></div><label class="lbl">Тип</label><div class="tp" style="margin-bottom:10px">${TYP.map(tp=>`<button class="tpi ${f.type===tp?'a':''}" onclick="S.eif.type='${tp}';rM()">${tp}</button>`).join('')}</div><div style="display:flex;gap:7px;margin-bottom:10px"><div style="flex:1"><label class="lbl">Срок годности</label><input class="inp" type="date" value="${h(f.expiry)}" oninput="S.eif.expiry=this.value"></div><div style="flex:1"><label class="lbl">Остаток (г)</label><input class="inp" type="number" value="${h(f.qty)}" placeholder="500" oninput="S.eif.qty=this.value"></div></div><label class="lbl">Штрих-код</label><div style="display:flex;gap:7px;margin-bottom:5px"><input id="bci" class="inp" type="number" inputmode="numeric" value="${h(f.barcode)}" placeholder="Введите цифры или сканируйте" style="flex:1;font-size:14px" oninput="S.eif.barcode=this.value"><label style="display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:7px;background:#EBF5FF;border:1.5px solid #C5D8FF;cursor:pointer;flex-shrink:0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1E6BE6" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><input type="file" accept="image/*" capture="environment" style="display:none" onchange="sFE(this)"></label></div><div id="bcst" style="font-size:10px;color:#8896AA;margin-bottom:12px">Введите цифры или сфотографируйте</div><div style="display:flex;gap:7px"><button class="abtn" style="flex:1" onclick="sEI()">Сохранить</button><button class="abtn-s" onclick="cM()">Отмена</button></div>`;}
+function sMI(){const name=(document.getElementById('mfin')||{}).value?.trim()||S.mf.name?.trim();if(!name)return;svm(name,{spotId:S.sid,inci:S.mf.inci,expiry:S.mf.expiry,qty:parseFloat(S.mf.qty)||0,type:S.mf.type,pkg:S.mf.pkg||'',barcode:S.scanDone?.barcode||''});cM();rT();}
+function rEIM(){const f=S.eif;return`<div class="mt">Редактировать позицию</div><div class="ms2">Изменение данных</div><div class="fg"><label class="lbl">Название</label><input class="inp" value="${h(f.tradeName)}" oninput="S.eif.tradeName=this.value"></div><div class="fg"><label class="lbl">INCI</label><input class="inp" value="${h(f.inci)}" placeholder="Sodium Hyaluronate" oninput="S.eif.inci=this.value"></div><label class="lbl">Тип</label><div class="tp" style="margin-bottom:9px">${TYP.map(tp=>`<button class="tpi ${f.type===tp?'a':''}" onclick="S.eif.type='${tp}';rM()">${tp}</button>`).join('')}</div><label class="lbl">Упаковка <span style="color:#8896AA;font-weight:400">(необязательно)</span></label><div class="tp" style="margin-bottom:10px">${PKG.map(pk=>`<button class="tpi ${(f.pkg||'')==pk?'a':''}" onclick="S.eif.pkg='${pk}';rM()">${pk}</button>`).join('')}</div><div style="display:flex;gap:7px;margin-bottom:10px"><div style="flex:1"><label class="lbl">Срок годности</label><input class="inp" type="date" value="${h(f.expiry)}" oninput="S.eif.expiry=this.value"></div><div style="flex:1"><label class="lbl">Остаток (г)</label><input class="inp" type="number" value="${h(f.qty)}" placeholder="500" oninput="S.eif.qty=this.value"></div></div><label class="lbl">Штрих-код</label><div style="display:flex;gap:7px;margin-bottom:5px"><input id="bci" class="inp" type="number" inputmode="numeric" value="${h(f.barcode)}" placeholder="Введите цифры или сканируйте" style="flex:1;font-size:14px" oninput="S.eif.barcode=this.value"><label style="display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:7px;background:#EBF5FF;border:1.5px solid #C5D8FF;cursor:pointer;flex-shrink:0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1E6BE6" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><input type="file" accept="image/*" capture="environment" style="display:none" onchange="sFE(this)"></label></div><div id="bcst" style="font-size:10px;color:#8896AA;margin-bottom:12px">Введите цифры или сфотографируйте</div><div style="display:flex;gap:7px"><button class="abtn" style="flex:1" onclick="sEI()">Сохранить</button><button class="abtn-s" onclick="cM()">Отмена</button></div>`;}
 function sEI(){const f=S.eif;const name=f.tradeName.trim();if(!name)return;if(name!==S.ein){const i=S.meta.findIndex(x=>x.tradeName===S.ein);if(i>=0)S.meta[i]={...S.meta[i],tradeName:name};}
 // If barcode changed, remove it from previous owner
 if(f.barcode){const prev=S.meta.find(x=>x.barcode===f.barcode&&x.tradeName!==name);if(prev){svm(prev.tradeName,{barcode:'',});}}
-svm(name,{inci:f.inci,expiry:f.expiry,qty:parseFloat(f.qty)||0,type:f.type,barcode:f.barcode});cM();rT();}
+svm(name,{inci:f.inci,expiry:f.expiry,qty:parseFloat(f.qty)||0,type:f.type,pkg:f.pkg||'',barcode:f.barcode});cM();rT();}
 function dBC(dataUrl,ok,fail){const img=new Image();img.onload=()=>{function t1(r,s,cb){const cv=document.createElement('canvas');const rad=r*Math.PI/180;const sw=img.width*s,sh=img.height*s;if(r===90||r===270){cv.width=sh;cv.height=sw;}else{cv.width=sw;cv.height=sh;}const ctx=cv.getContext('2d');ctx.save();ctx.translate(cv.width/2,cv.height/2);ctx.rotate(rad);ctx.scale(s,s);ctx.drawImage(img,-img.width/2,-img.height/2);ctx.restore();const id=ctx.getImageData(0,0,cv.width,cv.height);if(window.jsQR){const r2=window.jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});if(r2)return cb(r2.data);}if(window.ZXing){try{const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.QR_CODE]);hints.set(ZXing.DecodeHintType.TRY_HARDER,true);const rd=new ZXing.MultiFormatReader();rd.setHints(hints);const ls=new ZXing.HTMLCanvasElementLuminanceSource(cv);const res=rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));if(res)return cb(res.getText());}catch(e){}}cb(null);}
 const att=[{r:0,s:1},{r:0,s:1.5},{r:90,s:1},{r:0,s:2},{r:270,s:1},{r:0,s:3},{r:180,s:1}];let i=0;function nx(){if(i>=att.length)return fail();const{r,s}=att[i++];t1(r,s,res=>{if(res)ok(res);else nx();});}nx();};img.onerror=fail;img.src=dataUrl;}
 function sFE(input){const f=input.files[0];if(!f)return;const st=document.getElementById('bcst');if(st){st.textContent='Обрабатываем фото...';st.style.color='#8896AA';}const r=new FileReader();r.onload=ev=>{
@@ -624,7 +640,300 @@ function sFE(input){const f=input.files[0];if(!f)return;const st=document.getEle
     const el=document.getElementById('bci');
     if(el){el.focus();el.style.borderColor='#1E6BE6';}
   });};r.readAsDataURL(f);input.value='';}
+let _astr=null,_atmr=null;
+function startAssignScanner(){
+  const v=document.getElementById('lv');if(!v)return;
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}}).then(stream=>{
+    _astr=stream;v.srcObject=stream;v.play();
+    const wrap=document.getElementById('as-lv-wrap');
+    if(wrap){wrap.appendChild(v);}
+    v.style.cssText='width:100%;height:180px;object-fit:cover;display:block;';
+    const ss=document.getElementById('as-start');const se=document.getElementById('as-stop');
+    if(ss)ss.style.display='none';if(se)se.style.display='block';
+    _atmr=setInterval(()=>{
+      if(v.readyState<2)return;
+      const cv=document.getElementById('scan-cv');if(!cv)return;
+      cv.width=v.videoWidth;cv.height=v.videoHeight;
+      cv.getContext('2d').drawImage(v,0,0);
+      const id=cv.getContext('2d').getImageData(0,0,cv.width,cv.height);
+      if(window.jsQR){const r=window.jsQR(id.data,id.width,id.height,{inversionAttempts:'dontInvert'});if(r){stopAssignScanner();processAssignBC(r.data);return;}}
+      if(window.ZXing){try{const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.QR_CODE]);hints.set(ZXing.DecodeHintType.TRY_HARDER,false);const rd=new ZXing.MultiFormatReader();rd.setHints(hints);const ls=new ZXing.HTMLCanvasElementLuminanceSource(cv);const res=rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));if(res){stopAssignScanner();processAssignBC(res.getText());return;}}catch(e){}}
+    },400);
+  }).catch(e=>{if(S.scanDone)S.scanDone.error='Камера недоступна: '+e.message;else S.scanDone={error:'Камера недоступна: '+e.message};rM();});
+}
+function stopAssignScanner(){
+  clearInterval(_atmr);
+  if(_astr){_astr.getTracks().forEach(t=>t.stop());_astr=null;}
+  const v=document.getElementById('lv');
+  if(v){v.style.display='none';v.srcObject=null;document.body.appendChild(v);}
+}
+function applyAssignManualBC(){
+  const inp=document.getElementById('as-manual-bc');
+  const bc=(inp?.value||'').trim();if(!bc)return;
+  processAssignBC(bc);
+}
+function processAssignBC(bc){
+  const found=S.stock.find(x=>x.barcode===bc)||S.meta.find(x=>x.barcode===bc);
+  if(found){dA(found.tradeName);}
+  else{S.scanDone={barcode:bc,notFound:true};S.am='manual';rM();}
+}
 function hAS(input){const f=input.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{dBC(ev.target.result,bc=>{const found=S.stock.find(x=>x.barcode===bc)||S.meta.find(x=>x.barcode===bc);if(found)dA(found.tradeName);else{S.scanDone={barcode:bc,notFound:true};S.am='manual';rM();}},()=>{S.scanDone={error:'Не распознан. Попробуйте ближе.'};rM();});};r.readAsDataURL(f);input.value='';}
+
+// ── ИНВЕНТАРИЗАЦИЯ ────────────────────────────────────────────────
+function rInv(){
+  const inv=S.inv;
+  const allIngs=[...S.meta];
+  const counted=Object.keys(inv.items).length;
+  const total=allIngs.length;
+
+  if(!inv.active){
+    return`<div class="card" style="padding:20px;text-align:center;margin-bottom:12px">
+      <div style="font-size:32px;margin-bottom:12px;opacity:.4">📋</div>
+      <div style="font-weight:700;font-size:16px;color:#0F1829;margin-bottom:8px">Инвентаризация склада</div>
+      <div style="font-size:13px;color:#8896AA;margin-bottom:20px;line-height:1.6">Сканируйте штрих-коды позиций и вводите фактическое количество.<br>В конце — отчёт расхождений.</div>
+      <button onclick="startInv()" style="background:#1E6BE6;color:#fff;border:none;border-radius:8px;padding:13px 24px;font-size:14px;font-weight:700;cursor:pointer;width:100%;box-shadow:0 4px 12px #1E6BE625">Начать инвентаризацию</button>
+    </div>
+    ${allIngs.length===0?'<div style="text-align:center;color:#8896AA;font-size:13px;padding:20px">Добавьте позиции на склад</div>':''}`;
+  }
+
+  // Active session
+  const startTime=new Date(inv.startedAt);
+  const diff=Math.round((Date.now()-startTime)/60000);
+  const timeStr=diff<60?diff+'мин':`${Math.floor(diff/60)}ч ${diff%60}мин`;
+
+  // Build items list - all meta items
+  const rows=allIngs.map(ing=>{
+    const fact=inv.items[ing.tradeName];
+    const plan=parseFloat(ing.qty)||0;
+    const counted2=fact!==undefined;
+    const diff2=counted2?(parseFloat(fact)||0)-plan:null;
+    const path=ing.spotId?gsp(ing.spotId):'';
+    return{ing,fact,plan,counted:counted2,diff:diff2,path};
+  });
+
+  const notCounted=rows.filter(r=>!r.counted);
+  const withDiff=rows.filter(r=>r.counted&&r.diff!==0&&r.diff!==null);
+  const ok=rows.filter(r=>r.counted&&r.diff===0);
+
+  return`
+    <!-- Header -->
+    <div style="background:#1E6BE6;border-radius:12px;padding:14px 16px;margin-bottom:12px;color:#fff">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-weight:700;font-size:14px">Инвентаризация идёт...</div>
+        <div style="font-size:11px;opacity:.8">${timeStr}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">
+        <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:8px">
+          <div style="font-size:20px;font-weight:800">${counted}</div>
+          <div style="font-size:10px;opacity:.8">проверено</div>
+        </div>
+        <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:8px">
+          <div style="font-size:20px;font-weight:800">${notCounted.length}</div>
+          <div style="font-size:10px;opacity:.8">осталось</div>
+        </div>
+        <div style="background:rgba(${withDiff.length>0?'239,68,68':'52,211,153'},.25);border-radius:8px;padding:8px">
+          <div style="font-size:20px;font-weight:800">${withDiff.length}</div>
+          <div style="font-size:10px;opacity:.8">расхождений</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scan input -->
+    <div class="card" style="padding:14px;margin-bottom:12px">
+      <div class="slbl">Сканировать или ввести штрих-код</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input id="inv-bc" class="inp" type="number" inputmode="numeric" placeholder="Цифры со штрих-кода" style="flex:1;font-size:15px" onkeydown="if(event.key==='Enter'){invScanManual();event.preventDefault()}">
+        <button class="abtn" onclick="invScanManual()">Найти</button>
+      </div>
+      <button onclick="startInvCamera()" id="inv-cam-btn" style="width:100%;background:#F8FAFF;border:1.5px solid #E0E8F4;border-radius:8px;padding:9px;font-size:13px;color:#1E6BE6;font-weight:600;cursor:pointer">Включить камеру</button>
+      <div id="inv-cam-wrap" style="margin-top:8px;border-radius:8px;overflow:hidden;display:none"></div>
+      <div id="inv-scan-msg" style="font-size:12px;margin-top:6px;min-height:14px"></div>
+    </div>
+
+    <!-- Current scanned item -->
+    <div id="inv-current"></div>
+
+    <!-- Not counted -->
+    ${notCounted.length>0?`<div class="card" style="margin-bottom:10px">
+      <div style="padding:10px 14px;border-bottom:1px solid #E8ECF2;display:flex;justify-content:space-between">
+        <span style="font-size:11px;font-weight:700;color:#8896AA;text-transform:uppercase;letter-spacing:.5px">Не проверено (${notCounted.length})</span>
+      </div>
+      ${notCounted.slice(0,10).map(r=>`<div onclick="invSelectItem('${h(r.ing.tradeName)}')" style="padding:10px 14px;border-bottom:1px solid #F0F4F8;cursor:pointer;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:600;font-size:13px;color:#0F1829">${h(r.ing.tradeName)}</div>
+          ${r.path?`<div style="font-size:11px;color:#1E6BE6;margin-top:2px">📍 ${h(r.path)}</div>`:''}
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-left:8px">
+          <div style="font-size:11px;color:#8896AA">в системе</div>
+          <div style="font-size:14px;font-weight:700;color:#6B7A8D">${r.plan}г</div>
+        </div>
+      </div>`).join('')}
+      ${notCounted.length>10?`<div style="padding:8px 14px;font-size:11px;color:#8896AA;text-align:center">ещё ${notCounted.length-10} позиций...</div>`:''}
+    </div>`:''}
+
+    <!-- Discrepancies -->
+    ${withDiff.length>0?`<div class="card" style="margin-bottom:10px">
+      <div style="padding:10px 14px;border-bottom:1px solid #E8ECF2">
+        <span style="font-size:11px;font-weight:700;color:#E53E3E;text-transform:uppercase;letter-spacing:.5px">Расхождения (${withDiff.length})</span>
+      </div>
+      ${withDiff.map(r=>`<div style="padding:10px 14px;border-bottom:1px solid #F0F4F8;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:600;font-size:13px;color:#0F1829">${h(r.ing.tradeName)}</div>
+          ${r.path?`<div style="font-size:11px;color:#1E6BE6;margin-top:2px">📍 ${h(r.path)}</div>`:''}
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-left:8px">
+          <div style="font-size:10px;color:#8896AA">было → факт</div>
+          <div style="font-size:13px;font-weight:700;color:${r.diff>0?'#38A169':'#E53E3E'}">${r.plan}г → ${parseFloat(r.fact)}г</div>
+          <div style="font-size:11px;font-weight:700;color:${r.diff>0?'#38A169':'#E53E3E'}">${r.diff>0?'+':''}${r.diff}г</div>
+        </div>
+      </div>`).join('')}
+    </div>`:''}
+
+    <!-- OK items -->
+    ${ok.length>0?`<div class="card" style="margin-bottom:10px">
+      <div style="padding:10px 14px;border-bottom:1px solid #E8ECF2">
+        <span style="font-size:11px;font-weight:700;color:#38A169;text-transform:uppercase;letter-spacing:.5px">Совпадает (${ok.length})</span>
+      </div>
+      ${ok.map(r=>`<div style="padding:8px 14px;border-bottom:1px solid #F0F4F8;display:flex;justify-content:space-between">
+        <div style="font-size:13px;color:#6B7A8D">${h(r.ing.tradeName)}</div>
+        <div style="font-size:13px;font-weight:600;color:#38A169">${parseFloat(r.fact)}г</div>
+      </div>`).join('')}
+    </div>`:''}
+
+    <!-- Finish button -->
+    ${counted>0?`<div style="display:flex;gap:8px;margin-bottom:16px">
+      <button onclick="finishInv()" style="flex:1;background:#1E6BE6;color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer">Завершить и обновить остатки</button>
+      <button onclick="cancelInv()" style="background:#fff;border:1.5px solid #E8ECF2;color:#8896AA;border-radius:8px;padding:12px;font-size:13px;font-weight:600;cursor:pointer">Отмена</button>
+    </div>`:`<button onclick="cancelInv()" style="width:100%;background:#fff;border:1.5px solid #E8ECF2;color:#8896AA;border-radius:8px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:16px">Отменить инвентаризацию</button>`}
+  `;
+}
+
+function startInv(){
+  S.inv={active:true,items:{},startedAt:Date.now()};
+  sT('inv');
+}
+function cancelInv(){
+  stopInvCamera();
+  S.inv={active:false,items:{},startedAt:null};
+  sT('inv');
+}
+function finishInv(){
+  stopInvCamera();
+  // Update quantities in meta
+  let updated=0;
+  Object.entries(S.inv.items).forEach(([name,qty])=>{
+    const fact=parseFloat(qty)||0;
+    svm(name,{qty:fact});
+    updated++;
+  });
+  sv();
+  // Show result
+  const total=Object.keys(S.inv.items).length;
+  const withDiff=Object.entries(S.inv.items).filter(([name,qty])=>{
+    const m=S.meta.find(x=>x.tradeName===name);
+    return m&&(parseFloat(qty)||0)!==(parseFloat(m.qty)||0);
+  }).length;
+  S.inv={active:false,items:{},startedAt:null};
+  // Show toast
+  const el=document.getElementById('ab2');
+  if(el){
+    el.innerHTML=`<div style="background:#F0FFF4;border:1.5px solid #9AE6B4;border-radius:12px;padding:20px;text-align:center;margin-bottom:12px">
+      <div style="font-size:18px;font-weight:800;color:#38A169;margin-bottom:4px">Инвентаризация завершена</div>
+      <div style="font-size:13px;color:#6B7A8D">Обновлено позиций: ${updated}<br>С расхождениями: ${withDiff}</div>
+      <button onclick="sT('inv')" style="margin-top:14px;background:#1E6BE6;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:13px;font-weight:700;cursor:pointer">Начать новую</button>
+    </div>`;
+  }
+}
+function invScanManual(){
+  const inp=document.getElementById('inv-bc');
+  const bc=(inp?.value||'').trim();if(!bc)return;
+  invProcessBC(bc);if(inp)inp.value='';
+}
+function invProcessBC(bc){
+  const ing=S.meta.find(x=>x.barcode===bc);
+  if(!ing){
+    const msg=document.getElementById('inv-scan-msg');
+    if(msg){msg.textContent='Штрих-код не найден. Введите количество вручную.';msg.style.color='#E53E3E';}
+    return;
+  }
+  invSelectItem(ing.tradeName);
+}
+function invSelectItem(name){
+  const ing=S.meta.find(x=>x.tradeName===name);if(!ing)return;
+  const path=ing.spotId?gsp(ing.spotId):'';
+  const currentFact=S.inv.items[name]!==undefined?S.inv.items[name]:(ing.qty||0);
+  const el=document.getElementById('inv-current');
+  if(!el)return;
+  el.innerHTML=`<div class="card" style="padding:16px;margin-bottom:12px;border:1.5px solid #1E6BE6">
+    <div style="font-weight:700;font-size:15px;color:#0F1829;margin-bottom:4px">${h(name)}</div>
+    ${path?`<div style="font-size:12px;color:#1E6BE6;margin-bottom:8px">📍 ${h(path)}</div>`:''}
+    <div style="display:flex;gap:12px;margin-bottom:14px">
+      <div style="flex:1;background:#F8FAFF;border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:#8896AA;margin-bottom:2px">В системе</div>
+        <div style="font-size:18px;font-weight:800;color:#6B7A8D">${ing.qty||0}г</div>
+      </div>
+      <div style="flex:1;background:#EBF5FF;border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:#8896AA;margin-bottom:2px">Фактически</div>
+        <input id="inv-fact-inp" type="number" inputmode="numeric" value="${currentFact}"
+          style="width:100%;border:none;background:none;text-align:center;font-size:18px;font-weight:800;color:#1E6BE6;outline:none;font-family:inherit"
+          onkeydown="if(event.key==='Enter')saveInvFact('${h(name)}')">
+        <div style="font-size:10px;color:#8896AA">г</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="saveInvFact('${h(name)}')" style="flex:1;background:#1E6BE6;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer">Сохранить</button>
+      <button onclick="document.getElementById('inv-current').innerHTML=''" style="background:#fff;border:1.5px solid #E8ECF2;color:#8896AA;border-radius:8px;padding:10px 14px;font-size:13px;cursor:pointer">✕</button>
+    </div>
+  </div>`;
+  // Focus input
+  setTimeout(()=>{const inp=document.getElementById('inv-fact-inp');if(inp){inp.focus();inp.select();}},100);
+}
+function saveInvFact(name){
+  const inp=document.getElementById('inv-fact-inp');
+  const val=(inp?.value||'').trim();
+  if(val==='')return;
+  S.inv.items[name]=parseFloat(val)||0;
+  // Clear current and re-render lists
+  const cur=document.getElementById('inv-current');if(cur)cur.innerHTML='';
+  const msg=document.getElementById('inv-scan-msg');
+  if(msg){msg.textContent='✓ Сохранено: '+h(name)+' — '+val+'г';msg.style.color='#38A169';}
+  // Re-render inv tab to update counts
+  sT('inv');
+}
+
+// Inv camera
+let _istr=null,_itmr=null;
+function startInvCamera(){
+  const v=document.getElementById('lv');if(!v)return;
+  const wrap=document.getElementById('inv-cam-wrap');
+  const btn=document.getElementById('inv-cam-btn');
+  if(!wrap)return;
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}}).then(stream=>{
+    _istr=stream;v.srcObject=stream;v.play();
+    wrap.appendChild(v);wrap.style.display='block';
+    v.style.cssText='width:100%;height:180px;object-fit:cover;display:block;';
+    if(btn)btn.textContent='Остановить камеру';
+    btn.onclick=stopInvCamera;
+    _itmr=setInterval(()=>{
+      if(v.readyState<2)return;
+      const cv=document.getElementById('scan-cv');if(!cv)return;
+      cv.width=v.videoWidth;cv.height=v.videoHeight;
+      cv.getContext('2d').drawImage(v,0,0);
+      const id=cv.getContext('2d').getImageData(0,0,cv.width,cv.height);
+      if(window.jsQR){const r=window.jsQR(id.data,id.width,id.height,{inversionAttempts:'dontInvert'});if(r){stopInvCamera();invProcessBC(r.data);return;}}
+      if(window.ZXing){try{const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E]);hints.set(ZXing.DecodeHintType.TRY_HARDER,false);const rd=new ZXing.MultiFormatReader();rd.setHints(hints);const ls=new ZXing.HTMLCanvasElementLuminanceSource(cv);const res=rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));if(res){stopInvCamera();invProcessBC(res.getText());return;}}catch(e){}}
+    },400);
+  }).catch(e=>{const msg=document.getElementById('inv-scan-msg');if(msg){msg.textContent='Камера недоступна';msg.style.color='#E53E3E';}});
+}
+function stopInvCamera(){
+  clearInterval(_itmr);
+  if(_istr){_istr.getTracks().forEach(t=>t.stop());_istr=null;}
+  const v=document.getElementById('lv');
+  if(v){v.style.display='none';v.srcObject=null;document.body.appendChild(v);}
+  const wrap=document.getElementById('inv-cam-wrap');if(wrap)wrap.style.display='none';
+  const btn=document.getElementById('inv-cam-btn');
+  if(btn){btn.textContent='Включить камеру';btn.onclick=startInvCamera;}
+}
 function lS(src,cb){const s=document.createElement('script');s.src=src;s.onload=cb||function(){};s.onerror=function(){if(cb)cb();};document.head.appendChild(s);}
 lS('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js',()=>lS('https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js'));
 lS('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
