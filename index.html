@@ -1057,10 +1057,12 @@ function startInvCamera(){
     v.style.cssText='width:100%;height:180px;object-fit:cover;display:block;';
     if(btn)btn.textContent='Остановить камеру';
     btn.onclick=stopInvCamera;
+    // Dedicated canvas for inv scanner
+    let iCv=document.getElementById('inv-scan-cv');
+    if(!iCv){iCv=document.createElement('canvas');iCv.id='inv-scan-cv';iCv.style.display='none';document.body.appendChild(iCv);}
     _itmr=setInterval(()=>{
       if(v.readyState<2)return;
-      const cv=document.getElementById('scan-cv');if(!cv)return;
-      function tryD(scale){cv.width=Math.round(v.videoWidth*scale);cv.height=Math.round(v.videoHeight*scale);cv.getContext('2d').drawImage(v,0,0,cv.width,cv.height);const id=cv.getContext('2d').getImageData(0,0,cv.width,cv.height);if(window.jsQR){const r=window.jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});if(r)return r.data;}if(window.ZXing){try{const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.QR_CODE]);hints.set(ZXing.DecodeHintType.TRY_HARDER,true);const rd=new ZXing.MultiFormatReader();rd.setHints(hints);const ls=new ZXing.HTMLCanvasElementLuminanceSource(cv);const res=rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));if(res)return res.getText();}catch(e){}}return null;}
+      function tryD(scale){iCv.width=Math.round(v.videoWidth*scale);iCv.height=Math.round(v.videoHeight*scale);iCv.getContext('2d').drawImage(v,0,0,iCv.width,iCv.height);const id=iCv.getContext('2d').getImageData(0,0,iCv.width,iCv.height);if(window.jsQR){const r=window.jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});if(r)return r.data;}if(window.ZXing){try{const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.QR_CODE]);hints.set(ZXing.DecodeHintType.TRY_HARDER,true);const rd=new ZXing.MultiFormatReader();rd.setHints(hints);const ls=new ZXing.HTMLCanvasElementLuminanceSource(iCv);const res=rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));if(res)return res.getText();}catch(e){}}return null;}
       const r=tryD(1)||tryD(0.5)||tryD(2);if(r){stopInvCamera();invProcessBC(r);return;}
     },300);
   }).catch(e=>{const msg=document.getElementById('inv-scan-msg');if(msg){msg.textContent='Камера недоступна';msg.style.color='#E53E3E';}});
