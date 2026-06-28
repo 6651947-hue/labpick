@@ -626,7 +626,7 @@ function dSh(id){sD('Удалить полку?',()=>{const pids=S.spots.filter(
 function dSp(id){sD('Удалить место?',()=>{S.meta=S.meta.map(x=>x.spotId===id?{...x,spotId:''}:x);S.spots=S.spots.filter(x=>x.id!==id);sv();cM();rT();});}
 function sD(msg,fn){S.modal='del';S.dm=msg;S.df=fn;rM();oM();}
 function oM(){document.getElementById('mov').classList.remove('hidden');}
-function cM(){stopAssignScanner();stopManualBCScanner();document.getElementById('mov').classList.add('hidden');S.modal=null;}
+function cM(){stopAssignScanner();stopManualBCScanner();stopEditBCScanner();document.getElementById('mov').classList.add('hidden');S.modal=null;}
 function cbg(e){if(e.target===document.getElementById('mov'))cM();}
 function om(type,pid){S.modal=type;S.eid=null;S.mpid=pid||null;S.mf2={name:'',color:'',type:''};rM();oM();}
 function oe(type,id){S.modal=type;S.eid=id;let item;if(type==='room')item=S.rooms.find(x=>x.id===id);else if(type==='rack')item=S.racks.find(x=>x.id===id);else if(type==='shelf')item=S.shelves.find(x=>x.id===id);else if(type==='spot')item=S.spots.find(x=>x.id===id);S.mf2={name:item?.name||'',color:item?.color||'',type:item?.type||''};rM();oM();}
@@ -684,13 +684,43 @@ function uAR(){const el=document.getElementById('ar2');if(!el)return;const res=S
 res.map(x=>`<div onclick="dA('${h(x.tradeName)}')" style="padding:8px 11px;border-radius:7px;margin-bottom:3px;cursor:pointer;background:#F8FAFF;border:1.5px solid #E8ECF2;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:600;font-size:12px;color:#0F1829">${h(x.tradeName)}</div><div style="display:flex;gap:3px;margin-top:2px">${eb(x.expiry)}${x.qty>0?`<span class="tag tgr">${x.qty}г</span>`:''}</div></div><span style="color:#1E6BE6;font-size:16px">+</span></div>`).join('');}
 function dA(name){svm(name,{spotId:S.sid});cM();rT();}
 function sMI(){const name=(document.getElementById('mfin')||{}).value?.trim()||S.mf.name?.trim();if(!name)return;svm(name,{spotId:S.sid,inci:S.mf.inci,expiry:S.mf.expiry,qty:parseFloat(S.mf.qty)||0,type:S.mf.type,pkg:S.mf.pkg||'',barcode:S.mf.bc||S.scanDone?.barcode||''});cM();rT();}
-function rEIM(){const f=S.eif;return`<div class="mt">Редактировать позицию</div><div class="ms2">Изменение данных</div><div class="fg"><label class="lbl">Название</label><input class="inp" value="${h(f.tradeName)}" oninput="S.eif.tradeName=this.value"></div><div class="fg"><label class="lbl">INCI</label><input class="inp" value="${h(f.inci)}" placeholder="Sodium Hyaluronate" oninput="S.eif.inci=this.value"></div><label class="lbl">Тип</label><div class="tp" style="margin-bottom:9px">${TYP.map(tp=>`<button class="tpi ${f.type===tp?'a':''}" onclick="S.eif.type='${tp}';rM()">${tp}</button>`).join('')}</div><label class="lbl">Упаковка <span style="color:#8896AA;font-weight:400">(необязательно)</span></label><div class="tp" style="margin-bottom:10px">${PKG.map(pk=>`<button class="tpi ${(f.pkg||'')==pk?'a':''}" onclick="S.eif.pkg='${pk}';rM()">${pk}</button>`).join('')}</div><div style="display:flex;gap:7px;margin-bottom:10px"><div style="flex:1"><label class="lbl">Срок годности</label><input class="inp" type="date" value="${h(f.expiry)}" oninput="S.eif.expiry=this.value"></div><div style="flex:1"><label class="lbl">Остаток (г)</label><input class="inp" type="number" value="${h(f.qty)}" placeholder="500" oninput="S.eif.qty=this.value"></div></div><label class="lbl">Штрих-код</label><div style="display:flex;gap:7px;margin-bottom:5px"><input id="bci" class="inp" type="number" inputmode="numeric" value="${h(f.barcode)}" placeholder="Введите цифры или сканируйте" style="flex:1;font-size:14px" oninput="S.eif.barcode=this.value"><label style="display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:7px;background:#EBF5FF;border:1.5px solid #C5D8FF;cursor:pointer;flex-shrink:0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1E6BE6" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><input type="file" accept="image/*" capture="environment" style="display:none" onchange="sFE(this)"></label></div><div id="bcst" style="font-size:10px;color:#8896AA;margin-bottom:12px">Введите цифры или сфотографируйте</div><div style="display:flex;gap:7px"><button class="abtn" style="flex:1" onclick="sEI()">Сохранить</button><button class="abtn-s" onclick="cM()">Отмена</button></div>`;}
+function rEIM(){const f=S.eif;return`<div class="mt">Редактировать позицию</div><div class="ms2">Изменение данных</div><div class="fg"><label class="lbl">Название</label><input class="inp" value="${h(f.tradeName)}" oninput="S.eif.tradeName=this.value"></div><div class="fg"><label class="lbl">INCI</label><input class="inp" value="${h(f.inci)}" placeholder="Sodium Hyaluronate" oninput="S.eif.inci=this.value"></div><label class="lbl">Тип</label><div class="tp" style="margin-bottom:9px">${TYP.map(tp=>`<button class="tpi ${f.type===tp?'a':''}" onclick="S.eif.type='${tp}';rM()">${tp}</button>`).join('')}</div><label class="lbl">Упаковка <span style="color:#8896AA;font-weight:400">(необязательно)</span></label><div class="tp" style="margin-bottom:10px">${PKG.map(pk=>`<button class="tpi ${(f.pkg||'')==pk?'a':''}" onclick="S.eif.pkg='${pk}';rM()">${pk}</button>`).join('')}</div><div style="display:flex;gap:7px;margin-bottom:10px"><div style="flex:1"><label class="lbl">Срок годности</label><input class="inp" type="date" value="${h(f.expiry)}" oninput="S.eif.expiry=this.value"></div><div style="flex:1"><label class="lbl">Остаток (г)</label><input class="inp" type="number" value="${h(f.qty)}" placeholder="500" oninput="S.eif.qty=this.value"></div></div><label class="lbl">Штрих-код</label><div style="display:flex;gap:7px;margin-bottom:5px"><input id="bci" class="inp" type="number" inputmode="numeric" value="${h(f.barcode)}" placeholder="Введите цифры или сканируйте" style="flex:1;font-size:14px" oninput="S.eif.barcode=this.value"><button onclick="openEditBCScanner()" style="display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:7px;background:#EBF5FF;border:1.5px solid #C5D8FF;cursor:pointer;flex-shrink:0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1E6BE6" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button></div><div id="edit-bc-cam-wrap" style="display:none;margin-bottom:6px;border-radius:7px;overflow:hidden;border:1.5px solid #1E6BE6"></div><div id="bcst" style="font-size:10px;color:#8896AA;margin-bottom:12px">Введите цифры или нажмите камеру</div><div style="display:flex;gap:7px"><button class="abtn" style="flex:1" onclick="sEI()">Сохранить</button><button class="abtn-s" onclick="cM()">Отмена</button></div>`;}
 function sEI(){const f=S.eif;const name=f.tradeName.trim();if(!name)return;if(name!==S.ein){const i=S.meta.findIndex(x=>x.tradeName===S.ein);if(i>=0)S.meta[i]={...S.meta[i],tradeName:name};}
 // If barcode changed, remove it from previous owner
 if(f.barcode){const prev=S.meta.find(x=>x.barcode===f.barcode&&x.tradeName!==name);if(prev){svm(prev.tradeName,{barcode:'',});}}
 svm(name,{inci:f.inci,expiry:f.expiry,qty:parseFloat(f.qty)||0,type:f.type,pkg:f.pkg||'',barcode:f.barcode});cM();rT();}
 function dBC(dataUrl,ok,fail){const img=new Image();img.onload=()=>{function t1(r,s,cb){const cv=document.createElement('canvas');const rad=r*Math.PI/180;const sw=img.width*s,sh=img.height*s;if(r===90||r===270){cv.width=sh;cv.height=sw;}else{cv.width=sw;cv.height=sh;}const ctx=cv.getContext('2d');ctx.save();ctx.translate(cv.width/2,cv.height/2);ctx.rotate(rad);ctx.scale(s,s);ctx.drawImage(img,-img.width/2,-img.height/2);ctx.restore();const id=ctx.getImageData(0,0,cv.width,cv.height);if(window.jsQR){const r2=window.jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});if(r2)return cb(r2.data);}if(window.ZXing){try{const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.QR_CODE]);hints.set(ZXing.DecodeHintType.TRY_HARDER,true);const rd=new ZXing.MultiFormatReader();rd.setHints(hints);const ls=new ZXing.HTMLCanvasElementLuminanceSource(cv);const res=rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));if(res)return cb(res.getText());}catch(e){}}cb(null);}
 const att=[{r:0,s:1},{r:0,s:1.5},{r:90,s:1},{r:0,s:2},{r:270,s:1},{r:0,s:3},{r:180,s:1}];let i=0;function nx(){if(i>=att.length)return fail();const{r,s}=att[i++];t1(r,s,res=>{if(res)ok(res);else nx();});}nx();};img.onerror=fail;img.src=dataUrl;}
+let _eStr=null,_eTmr=null;
+function openEditBCScanner(){
+  const wrap=document.getElementById('edit-bc-cam-wrap');
+  if(!wrap)return;
+  if(_eStr){stopEditBCScanner();return;}
+  const v=document.getElementById('lv');if(!v)return;
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}}).then(stream=>{
+    _eStr=stream;v.srcObject=stream;v.play();
+    wrap.appendChild(v);wrap.style.display='block';
+    v.style.cssText='width:100%;height:180px;object-fit:cover;display:block;';
+    const st=document.getElementById('bcst');
+    if(st){st.textContent='Наведите на штрих-код...';st.style.color='#1E6BE6';}
+    let eCv=document.getElementById('edit-scan-cv');
+    if(!eCv){eCv=document.createElement('canvas');eCv.id='edit-scan-cv';eCv.style.display='none';document.body.appendChild(eCv);}
+    _eTmr=setInterval(()=>{
+      if(v.readyState<2)return;
+      function tryD(scale){eCv.width=Math.round(v.videoWidth*scale);eCv.height=Math.round(v.videoHeight*scale);eCv.getContext('2d').drawImage(v,0,0,eCv.width,eCv.height);const id=eCv.getContext('2d').getImageData(0,0,eCv.width,eCv.height);if(window.jsQR){const r=window.jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});if(r)return r.data;}if(window.ZXing){try{const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.QR_CODE]);hints.set(ZXing.DecodeHintType.TRY_HARDER,true);const rd=new ZXing.MultiFormatReader();rd.setHints(hints);const ls=new ZXing.HTMLCanvasElementLuminanceSource(eCv);const res=rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));if(res)return res.getText();}catch(e){}}return null;}
+      const bc=tryD(1)||tryD(0.5)||tryD(2);
+      if(bc){stopEditBCScanner();S.eif.barcode=bc;const el=document.getElementById('bci');if(el){el.value=bc;el.style.borderColor='#38A169';}const st2=document.getElementById('bcst');if(st2){st2.textContent='Считан: '+bc;st2.style.color='#38A169';st2.style.fontWeight='700';}if(S.ein)svm(S.ein,{barcode:bc});}
+    },300);
+  }).catch(e=>{const st=document.getElementById('bcst');if(st){st.textContent='Камера недоступна';st.style.color='#E53E3E';}});
+}
+function stopEditBCScanner(){
+  clearInterval(_eTmr);_eTmr=null;
+  if(_eStr){_eStr.getTracks().forEach(t=>t.stop());_eStr=null;}
+  const v=document.getElementById('lv');
+  if(v){v.style.display='none';v.srcObject=null;document.body.appendChild(v);}
+  const wrap=document.getElementById('edit-bc-cam-wrap');
+  if(wrap){wrap.style.display='none';}
+}
 function sFE(input){const f=input.files[0];if(!f)return;const st=document.getElementById('bcst');if(st){st.textContent='Обрабатываем фото...';st.style.color='#8896AA';}const r=new FileReader();r.onload=ev=>{
   // Try multiple times with different scales for better recognition
   dBC(ev.target.result,bc=>{
@@ -743,21 +773,20 @@ let _mfStr=null,_mfTmr=null;
 function openManualBCScanner(){
   const wrap=document.getElementById('mf-cam-wrap');
   if(!wrap)return;
-  // Toggle
   if(_mfStr){stopManualBCScanner();return;}
   const v=document.getElementById('lv');if(!v)return;
   navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}}).then(stream=>{
     _mfStr=stream;v.srcObject=stream;v.play();
     wrap.appendChild(v);wrap.style.display='block';
-    v.style.cssText='width:100%;height:180px;object-fit:cover;display:block;';
+    v.style.cssText='width:100%;height:200px;object-fit:cover;display:block;border-radius:8px';
     const st=document.getElementById('mf-bc-status');
     if(st){st.textContent='Наведите камеру на штрих-код...';st.style.color='#1E6BE6';}
-    // Change button icon to stop
-    const btn=wrap.previousElementSibling?.querySelector('button');
+    // Create dedicated canvas for this scanner
+    let mfCv=document.getElementById('mf-scan-cv');
+    if(!mfCv){mfCv=document.createElement('canvas');mfCv.id='mf-scan-cv';mfCv.style.display='none';document.body.appendChild(mfCv);}
     _mfTmr=setInterval(()=>{
       if(v.readyState<2)return;
-      const cv=document.getElementById('scan-cv');if(!cv)return;
-      // Try multiple scales for better EAN-13 detection
+      const cv=document.getElementById('mf-scan-cv');if(!cv)return;
       function tryDecode(scale){
         cv.width=Math.round(v.videoWidth*scale);
         cv.height=Math.round(v.videoHeight*scale);
