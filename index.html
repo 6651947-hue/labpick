@@ -332,19 +332,50 @@ else if(ss?.type==='link'||(S.sm==='link'&&S.lb)){const bc=S.lb||ss?.barcode||''
   <button id="lob" class="abtn" style="width:100%;display:none" onclick="cL('${h(bc)}')">Привязать к найденной позиции</button>
   <div style="display:flex;align-items:center;gap:8px;margin:10px 0"><div style="flex:1;height:1px;background:#E8ECF2"></div><span style="font-size:11px;color:#8896AA">или</span><div style="flex:1;height:1px;background:#E8ECF2"></div></div>
   <div style="font-size:11px;font-weight:700;color:#6B7A8D;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Создать новую позицию</div>
-  <div class="fg" style="margin-bottom:8px"><input id="new-ing-name" class="inp" placeholder="Название позиции" style="margin-bottom:0"/></div>
-  <div style="margin-bottom:8px">
-    <div style="font-size:11px;color:#8896AA;margin-bottom:5px">Тип</div>
-    <div style="display:flex;gap:5px;flex-wrap:wrap" id="new-ing-types">${["Порошок","Жидкость","Канистра","Гель","Масло","Воск","Прочее"].map(t=>`<button onclick="selectNewIngType(this,'${t}')" style="padding:4px 10px;border-radius:18px;border:1.5px solid #E8ECF2;background:#F8FAFF;color:#6B7A8D;font-size:11px;cursor:pointer">${t}</button>`).join('')}</div>
+  <div style="margin-bottom:8px"><label class="lbl">Название *</label><input id="new-ing-name" class="inp" placeholder="Гиалуроновая кислота LMW"/></div>
+  <div style="margin-bottom:8px"><label class="lbl">INCI</label><input id="new-ing-inci" class="inp" placeholder="Sodium Hyaluronate"/></div>
+  <div style="margin-bottom:10px">
+    <label class="lbl">Тип</label>
+    <div style="display:flex;gap:5px;flex-wrap:wrap" id="new-ing-types">${["Порошок","Жидкость","Канистра","Гель","Масло","Воск","Прочее"].map(t=>`<button onclick="selectNewIngType(this,'${t}')" style="padding:5px 11px;border-radius:18px;border:1.5px solid #E8ECF2;background:#F8FAFF;color:#6B7A8D;font-size:11px;cursor:pointer;transition:all .15s">${t}</button>`).join('')}</div>
   </div>
-  ${S.spots.length ? `<div style="margin-bottom:8px">
-    <div style="font-size:11px;color:#8896AA;margin-bottom:5px">Место на складе (необязательно)</div>
-    <select id="new-ing-spot" class="inp" style="margin-bottom:0">
-      <option value="">— Без места —</option>
-      ${S.spots.map(sp=>{const path=gsp(sp.id);return`<option value="${sp.id}">${h(path)}</option>`;}).join('')}
-    </select>
-  </div>` : '<div style="font-size:11px;color:#8896AA;margin-bottom:8px">Место: сначала создайте структуру склада</div>'}
-  <button onclick="createAndLinkIng('${h(bc)}')" class="abtn" style="width:100%;background:#1E6BE6;color:#fff;border-color:#1E6BE6;padding:10px;font-size:13px">Создать и привязать штрих-код</button>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <div style="flex:1"><label class="lbl">Срок годности</label><input id="new-ing-expiry" class="inp" type="date"/></div>
+    <div style="flex:1"><label class="lbl">Остаток (г)</label><input id="new-ing-qty" class="inp" type="number" placeholder="500"/></div>
+  </div>
+  <div style="background:#F8FAFF;border:1px solid #E8ECF2;border-radius:10px;padding:12px;margin-bottom:10px">
+    <div style="font-size:11px;font-weight:700;color:#6B7A8D;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Расположение на складе</div>
+    <div style="margin-bottom:8px"><label class="lbl">Помещение</label>
+      <select id="ni-room" class="inp" onchange="onNIRoom()" style="margin-bottom:0">
+        <option value="">— выберите —</option>
+        ${S.rooms.map(r=>`<option value="${r.id}">${h(r.name)}</option>`).join('')}
+        <option value="__new">+ Создать новое помещение</option>
+      </select>
+      <input id="ni-room-new" class="inp" placeholder="Название помещения" style="display:none;margin-top:6px"/>
+    </div>
+    <div id="ni-rack-wrap" style="display:none;margin-bottom:8px"><label class="lbl">Стеллаж</label>
+      <select id="ni-rack" class="inp" onchange="onNIRack()" style="margin-bottom:0">
+        <option value="">— выберите —</option>
+        <option value="__new">+ Создать новый стеллаж</option>
+      </select>
+      <input id="ni-rack-new" class="inp" placeholder="Название стеллажа" style="display:none;margin-top:6px"/>
+    </div>
+    <div id="ni-shelf-wrap" style="display:none;margin-bottom:8px"><label class="lbl">Полка</label>
+      <select id="ni-shelf" class="inp" onchange="onNIShelf()" style="margin-bottom:0">
+        <option value="">— выберите —</option>
+        <option value="__new">+ Создать новую полку</option>
+      </select>
+      <input id="ni-shelf-new" class="inp" placeholder="Название полки" style="display:none;margin-top:6px"/>
+    </div>
+    <div id="ni-spot-wrap" style="display:none"><label class="lbl">Место</label>
+      <select id="ni-spot" class="inp" style="margin-bottom:0">
+        <option value="">— выберите —</option>
+        <option value="__new">+ Создать новое место</option>
+      </select>
+      <input id="ni-spot-new" class="inp" placeholder="Название места (А1, М3...)" style="display:none;margin-top:6px"/>
+    </div>
+    ${!S.rooms.length?'<div style="font-size:11px;color:#8896AA;margin-top:4px">Структура склада пуста — создайте помещение выше или добавьте через вкладку Склад</div>':''}
+  </div>
+  <button onclick="createAndLinkIng('${h(bc)}')" style="width:100%;background:#1E6BE6;color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px #1E6BE625">Создать и привязать штрих-код</button>
 </div><script>setTimeout(rLR,0)<\/script>`;}
 else if(ss?.type==='linked'){res=`<div style="background:#F0FFF4;border:1.5px solid #9AE6B4;border-radius:11px;padding:13px;text-align:center;margin-bottom:9px"><div style="font-size:16px;font-weight:800;color:#38A169">Привязано</div><div style="font-size:12px;color:#6B7A8D;margin-top:3px">${h(ss.name||'')}</div></div>`;}
 return`<div style="display:flex;gap:7px;margin-bottom:11px"><button onclick="S.sm='find';S.ss=null;S.lb=null;stSc();rT()" style="flex:1;padding:8px;border-radius:7px;border:1.5px solid ${S.sm==='find'?'#1E6BE6':'#E8ECF2'};background:${S.sm==='find'?'#EBF5FF':'#F8FAFF'};color:${S.sm==='find'?'#1E6BE6':'#6B7A8D'};font-size:11px;font-weight:${S.sm==='find'?700:500};cursor:pointer">Найти позицию</button><button onclick="S.sm='link';S.ss=null;S.lb=null;stSc();rT()" style="flex:1;padding:8px;border-radius:7px;border:1.5px solid ${S.sm==='link'?'#1E6BE6':'#E8ECF2'};background:${S.sm==='link'?'#EBF5FF':'#F8FAFF'};color:${S.sm==='link'?'#1E6BE6':'#6B7A8D'};font-size:11px;font-weight:${S.sm==='link'?700:500};cursor:pointer">Привязать код</button></div>
@@ -355,20 +386,86 @@ function selectNewIngType(btn,type){
     b.style.borderColor='#E8ECF2';b.style.background='#F8FAFF';b.style.color='#6B7A8D';b.style.fontWeight='400';
   });
   btn.style.borderColor='#1E6BE6';btn.style.background='#EBF5FF';btn.style.color='#1E6BE6';btn.style.fontWeight='700';
-  btn._selected=true;
   window._selectedIngType=type;
+}
+function onNIRoom(){
+  const v=document.getElementById('ni-room').value;
+  const newInp=document.getElementById('ni-room-new');
+  const rackWrap=document.getElementById('ni-rack-wrap');
+  const shelfWrap=document.getElementById('ni-shelf-wrap');
+  const spotWrap=document.getElementById('ni-spot-wrap');
+  if(newInp)newInp.style.display=v==='__new'?'block':'none';
+  if(rackWrap)rackWrap.style.display=v&&v!=='__new'?'block':'none';
+  if(shelfWrap)shelfWrap.style.display='none';
+  if(spotWrap)spotWrap.style.display='none';
+  if(v&&v!=='__new'){
+    const racks=S.racks.filter(r=>r.roomId===v);
+    const sel=document.getElementById('ni-rack');
+    if(sel){sel.innerHTML='<option value="">— выберите —</option>'+racks.map(r=>`<option value="${r.id}">${h(r.name)}</option>`).join('')+'<option value="__new">+ Создать новый стеллаж</option>';}
+  }
+}
+function onNIRack(){
+  const v=document.getElementById('ni-rack').value;
+  const newInp=document.getElementById('ni-rack-new');
+  const shelfWrap=document.getElementById('ni-shelf-wrap');
+  const spotWrap=document.getElementById('ni-spot-wrap');
+  if(newInp)newInp.style.display=v==='__new'?'block':'none';
+  if(shelfWrap)shelfWrap.style.display=v&&v!=='__new'?'block':'none';
+  if(spotWrap)spotWrap.style.display='none';
+  if(v&&v!=='__new'){
+    const shelves=S.shelves.filter(s=>s.rackId===v);
+    const sel=document.getElementById('ni-shelf');
+    if(sel){sel.innerHTML='<option value="">— выберите —</option>'+shelves.map(s=>`<option value="${s.id}">${h(s.name)}</option>`).join('')+'<option value="__new">+ Создать новую полку</option>';}
+  }
+}
+function onNIShelf(){
+  const v=document.getElementById('ni-shelf').value;
+  const newInp=document.getElementById('ni-shelf-new');
+  const spotWrap=document.getElementById('ni-spot-wrap');
+  if(newInp)newInp.style.display=v==='__new'?'block':'none';
+  if(spotWrap)spotWrap.style.display=v&&v!=='__new'?'block':'none';
+  if(v&&v!=='__new'){
+    const spots=S.spots.filter(s=>s.shelfId===v);
+    const sel=document.getElementById('ni-spot');
+    if(sel){sel.innerHTML='<option value="">— выберите —</option>'+spots.map(s=>`<option value="${s.id}">${h(s.name)}</option>`).join('')+'<option value="__new">+ Создать новое место</option>';}
+  }
 }
 function createAndLinkIng(bc){
   const name=(document.getElementById('new-ing-name')||{}).value?.trim();
-  if(!name){
-    const el=document.getElementById('new-ing-name');
-    if(el){el.style.borderColor='#E53E3E';el.focus();}
-    return;
-  }
-  const spotId=(document.getElementById('new-ing-spot')||{}).value||'';
+  if(!name){const el=document.getElementById('new-ing-name');if(el){el.style.borderColor='#E53E3E';el.focus();}return;}
+  const inci=(document.getElementById('new-ing-inci')||{}).value?.trim()||'';
+  const expiry=(document.getElementById('new-ing-expiry')||{}).value||'';
+  const qty=parseFloat((document.getElementById('new-ing-qty')||{}).value)||0;
   const type=window._selectedIngType||'';
-  // Save to meta
-  svm(name,{barcode:bc,spotId,type,inci:'',expiry:'',qty:0});
+  // Resolve or create spot
+  let spotId='';
+  const roomSel=document.getElementById('ni-room');
+  const rackSel=document.getElementById('ni-rack');
+  const shelfSel=document.getElementById('ni-shelf');
+  const spotSel=document.getElementById('ni-spot');
+  // Create new entries if needed
+  let roomId=roomSel?.value;
+  if(roomId==='__new'){
+    const n=(document.getElementById('ni-room-new')||{}).value?.trim();
+    if(n){roomId='room_'+uid();S.rooms.push({id:roomId,name:n,color:PAL[0]});sv();}else roomId='';
+  }
+  let rackId=rackSel?.value;
+  if(rackId==='__new'&&roomId){
+    const n=(document.getElementById('ni-rack-new')||{}).value?.trim();
+    if(n){rackId='rack_'+uid();S.racks.push({id:rackId,roomId,name:n,color:PAL[1]});sv();}else rackId='';
+  }
+  let shelfId=shelfSel?.value;
+  if(shelfId==='__new'&&rackId){
+    const n=(document.getElementById('ni-shelf-new')||{}).value?.trim();
+    if(n){shelfId='shelf_'+uid();S.shelves.push({id:shelfId,rackId,name:n,color:PAL[5]});sv();}else shelfId='';
+  }
+  let resolvedSpotId=spotSel?.value;
+  if(resolvedSpotId==='__new'&&shelfId){
+    const n=(document.getElementById('ni-spot-new')||{}).value?.trim();
+    if(n){resolvedSpotId='spot_'+uid();S.spots.push({id:resolvedSpotId,shelfId,name:n,type,color:PAL[6]});sv();}else resolvedSpotId='';
+  }
+  spotId=resolvedSpotId||'';
+  svm(name,{barcode:bc,spotId,type,inci,expiry,qty});
   window._selectedIngType=null;
   S.lb=null;S.lt=null;
   S.ss={type:'linked',name};
