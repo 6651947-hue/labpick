@@ -2,1365 +2,389 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-
-<!-- PWA -->
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black"/>
-<meta name="apple-mobile-web-app-title" content="LabPick"/>
-<meta name="mobile-web-app-capable" content="yes"/>
-<meta name="theme-color" content="#0D0F14"/>
-<link rel="manifest" href="manifest.json"/>
-
-<!-- iOS splash + icon (inline SVG as data URI) -->
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%230D0F14'/%3E%3Ctext x='256' y='320' font-size='280' text-anchor='middle'%3E🧪%3C/text%3E%3C/svg%3E"/>
-
-<title>LabPick</title>
-<script>
-// Load external libs gracefully — works online, fails silently offline
-function loadScript(src, cb){
-  var s=document.createElement('script');
-  s.src=src;
-  s.onload=cb||function(){};
-  s.onerror=function(){ console.warn('Could not load:', src); if(cb) cb(); };
-  document.head.appendChild(s);
-}
-// Load jsQR then ZXing
-loadScript('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js', function(){
-  loadScript('https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js');
-});
-</script>
-<script>loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');</script>
+<meta name="apple-mobile-web-app-title" content="ГдеЧто"/>
+<meta name="theme-color" content="#1E6BE6"/>
+<title>ГдеЧто — Находи быстро, управляй просто</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{background:#0D0F14;color:#E8EAF2;font-family:'Inter',system-ui,sans-serif;font-size:14px;max-width:480px;margin:0 auto;padding-bottom:72px;min-height:100vh}
-input,select,textarea,button{font-family:inherit;font-size:14px}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;color:#1A2234;background:#fff;font-size:15px;line-height:1.6}
+input,select,textarea,button{font-family:inherit}
 button{cursor:pointer}
-.inp{background:#1E2028;border:1px solid #323548;border-radius:8px;padding:9px 12px;color:#E8EAF2;font-size:14px;width:100%;outline:none}
-.inp::placeholder{color:#5A5D70}
-textarea.inp{resize:vertical;font-family:monospace;font-size:12px}
 .hidden{display:none!important}
-/* Bottom nav */
-#bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#161820;border-top:1px solid #272A36;display:flex;max-width:480px;margin:0 auto;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
-.nav-item{flex:1;padding:10px 0 8px;text-align:center;cursor:pointer;border-top:2px solid transparent;transition:all .15s}
-.nav-item.active{border-top-color:#6EC6A0}
-.nav-item .nav-icon{font-size:20px}
-.nav-item .nav-label{font-size:10px;color:#5A5D70;font-weight:400;margin-top:1px}
-.nav-item.active .nav-label{color:#6EC6A0;font-weight:700}
-/* Cards */
-.card{background:#161820;border:1px solid #272A36;border-radius:12px;margin-bottom:10px;overflow:hidden}
-.level-card{margin-bottom:6px}
-.level-header{display:flex;align-items:center;background:#161820;border-radius:10px;padding:10px 12px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.3);user-select:none}
-.level-header:active{opacity:.85}
-.level-title{font-weight:700;font-size:14px;color:#E8EAF2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.level-sub{font-size:10px;color:#5A5D70;margin-top:1px}
-.level-children{padding-left:14px;padding-top:4px}
-.ing-card{display:flex;align-items:flex-start;background:#22253A;border-radius:8px;padding:7px 10px;margin-bottom:4px;border-left:2px solid #2E5A48}
-/* Modal */
-#modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:flex-end;z-index:200}
-#modal-box{background:#161820;border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:480px;margin:0 auto;max-height:90vh;overflow-y:auto}
-/* Tabs (sheet selector) */
-.sheet-tab{padding:5px 10px;border-radius:16px;border:1px solid #272A36;background:#1E2028;color:#8A8EA8;font-size:11px;font-weight:400;white-space:nowrap;margin:0 3px 4px 0}
-.sheet-tab.active{border-color:#6EC6A0;background:#6EC6A012;color:#6EC6A0;font-weight:700}
-/* Type pills */
-.type-pill{padding:6px 12px;border-radius:20px;border:1px solid #272A36;background:#1E2028;color:#8A8EA8;font-size:12px}
-.type-pill.active{border-color:#6EC6A0;background:#6EC6A012;color:#6EC6A0}
-/* Assign mode tabs */
-.mode-tab{flex:1;padding:8px 4px;border-radius:8px;border:1px solid #272A36;background:#1E2028;color:#8A8EA8;font-weight:400;font-size:12px}
-.mode-tab.active{border-color:#6EC6A0;background:#6EC6A012;color:#6EC6A0;font-weight:700}
-/* Expiry badge */
-.badge{font-size:9px;border-radius:4px;padding:2px 5px;font-weight:700}
-/* Color swatch */
-.swatch{width:28px;height:28px;border-radius:6px;cursor:pointer;border:3px solid transparent;display:inline-block;margin-right:6px;margin-bottom:6px}
-.swatch.active{border-color:#fff}
-/* Btn styles */
-.btn-primary{background:#6EC6A0;color:#0D0F14;border:none;border-radius:8px;padding:10px 16px;font-weight:700;font-size:13px}
-.btn-secondary{background:#1E2028;color:#E8EAF2;border:1px solid #323548;border-radius:8px;padding:10px 16px;font-weight:700;font-size:13px}
-.btn-danger{background:#E0707012;color:#E07070;border:1px solid #E0707044;border-radius:8px;padding:10px 16px;font-weight:700;font-size:13px}
-.btn-icon{background:none;border:none;color:#5A5D70;font-size:13px;padding:2px 4px}
-.btn-add{background:#6EC6A012;border:1px solid #2E5A48;color:#6EC6A0;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;white-space:nowrap}
-.btn-small{background:#1E2028;border:1px solid #323548;color:#8A8EA8;border-radius:6px;padding:3px 8px;font-size:11px}
-/* Search result row */
-.search-row{padding:10px 12px;border-radius:8px;margin-bottom:4px;cursor:pointer;background:#1E2028;border:1px solid #272A36;display:flex;justify-content:space-between;align-items:center}
-.search-row:active{background:#6EC6A015}
-/* Section header */
-.sec-head{font-size:11px;font-weight:700;color:#5A5D70;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
-/* Phase header */
-.phase-head{border-bottom:1px solid #272A36;padding:8px 14px;display:flex;align-items:center;gap:8px}
-.phase-dot{width:8px;height:8px;border-radius:50%}
+.inp{background:#F8FAFF;border:1.5px solid #E0E8F4;border-radius:8px;padding:10px 14px;color:#1A2234;font-size:14px;width:100%;outline:none;transition:border .2s}
+.inp:focus{border-color:#1E6BE6;background:#fff;box-shadow:0 0 0 3px #1E6BE612}
+.inp::placeholder{color:#A0AABF}
+.btn-blue{background:#1E6BE6;color:#fff;border:none;border-radius:8px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;width:100%;transition:all .2s}
+.btn-blue:hover{background:#1658CC}
+.btn-ghost{background:#fff;color:#1A2234;border:1.5px solid #D0D8E8;border-radius:8px;padding:11px 24px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-ghost:hover{border-color:#1E6BE6;color:#1E6BE6}
+.lbl{font-size:12px;font-weight:600;color:#6B7A8D;margin-bottom:5px;display:block}
+.fg{margin-bottom:14px}
+.err{font-size:12px;color:#E53E3E;margin-top:4px;display:none}
+/* LANDING */
+nav{background:#fff;border-bottom:1px solid #E8ECF2;padding:0 20px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.logo{display:flex;align-items:center;gap:8px;cursor:pointer}
+.logo-icon{width:30px;height:30px;background:linear-gradient(135deg,#1E6BE6,#0F4FC4);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:11px}
+.logo-txt{font-size:17px;font-weight:900;color:#1A2234;letter-spacing:-.5px}
+.logo-txt span{color:#1E6BE6}
+.nav-btns{display:flex;gap:8px}
+.nav-in{background:none;border:1.5px solid #D0D8E8;color:#1A2234;border-radius:6px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer}
+.nav-in:hover{border-color:#1E6BE6;color:#1E6BE6}
+.nav-ct{background:#1E6BE6;color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:700;cursor:pointer}
+.nav-ct:hover{background:#1658CC}
+.hero{background:linear-gradient(160deg,#F0F5FF,#EBF0FF 50%,#F8F9FF);padding:64px 20px 72px;text-align:center;overflow:hidden;position:relative}
+.hero::before{content:'';position:absolute;top:-100px;right:-150px;width:500px;height:500px;background:radial-gradient(circle,#1E6BE614,transparent 70%);pointer-events:none}
+.hbadge{display:inline-block;background:#E8F0FF;border:1px solid #C5D8FF;color:#1E6BE6;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;margin-bottom:22px}
+.hero h1{font-size:clamp(26px,6vw,44px);font-weight:900;line-height:1.12;letter-spacing:-1.5px;color:#0F1829;margin-bottom:10px}
+.hero h1 span{color:#1E6BE6}
+.hp1{font-size:16px;color:#1A2234;font-weight:500;max-width:480px;margin:0 auto 6px}
+.hp2{font-size:14px;color:#6B7A8D;max-width:420px;margin:0 auto 32px}
+.hbtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:52px}
+.btn-main{background:#1E6BE6;color:#fff;border:none;border-radius:8px;padding:13px 28px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px #1E6BE635;transition:all .2s}
+.btn-main:hover{background:#1658CC;transform:translateY(-1px)}
+.btn-ol{background:#fff;color:#1A2234;border:1.5px solid #D0D8E8;border-radius:8px;padding:12px 22px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-ol:hover{border-color:#1E6BE6;color:#1E6BE6}
+.mockup{max-width:600px;margin:0 auto;background:#fff;border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.11);overflow:hidden;border:1px solid #E8ECF2}
+.mb{background:#F5F7FA;border-bottom:1px solid #E8ECF2;padding:9px 14px;display:flex;align-items:center;gap:8px}
+.mds{display:flex;gap:5px}
+.mds span{width:9px;height:9px;border-radius:50%;background:#E8ECF2}
+.mds span:nth-child(1){background:#FC6058}.mds span:nth-child(2){background:#FEC02F}.mds span:nth-child(3){background:#2ACA42}
+.mu{background:#fff;border:1px solid #E8ECF2;border-radius:3px;padding:2px 10px;font-size:10px;color:#8896AA;flex:1;text-align:center}
+.mbody{padding:16px;background:#F8FAFF;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mc{background:#fff;border:1px solid #E8ECF2;border-radius:9px;padding:10px 12px;border-left:3px solid #1E6BE6}
+.mct{font-size:9px;font-weight:700;color:#1A2234;margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px}
+.mr{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #F0F2F5;font-size:9px;color:#4A5568}
+.mr:last-child{border:none}
+.ml{color:#1E6BE6;font-weight:600}
+.mw{color:#E53E3E;font-weight:600}
+.ms{background:linear-gradient(135deg,#1E6BE6,#0F4FC4);border-radius:9px;padding:12px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.msb{background:#fff;color:#1E6BE6;border-radius:5px;padding:2px 8px;font-size:9px;font-weight:800}
+.stats{border-top:1px solid #E8ECF2;border-bottom:1px solid #E8ECF2;padding:32px 20px}
+.sg{max-width:840px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);text-align:center}
+.st{padding:8px 20px;border-right:1px solid #E8ECF2}
+.st:last-child{border:none}
+.sn{font-size:30px;font-weight:900;color:#1E6BE6;letter-spacing:-1px}
+.sl{font-size:12px;color:#8896AA;margin-top:2px}
+.ls{padding:64px 20px;max-width:880px;margin:0 auto}
+.ltag{font-size:10px;font-weight:700;color:#1E6BE6;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px}
+.ltit{font-size:clamp(20px,4vw,32px);font-weight:800;letter-spacing:-.8px;color:#0F1829;margin-bottom:10px}
+.lsb{font-size:15px;color:#4A5568;max-width:520px;line-height:1.65}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:20px;margin-top:44px}
+.step{background:#F8FAFF;border:1px solid #E8ECF2;border-radius:12px;padding:22px;transition:box-shadow .2s}
+.step:hover{box-shadow:0 4px 20px rgba(30,107,230,.09);border-color:#C5D8FF}
+.snum{width:32px;height:32px;background:#1E6BE6;color:#fff;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;margin-bottom:14px}
+.step h3{font-size:14px;font-weight:700;color:#0F1829;margin-bottom:7px}
+.step p{font-size:12px;color:#6B7A8D;line-height:1.6}
+.fbg{background:#F5F7FC;padding:64px 20px}
+.fi{max-width:880px;margin:0 auto}
+.fg2{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-top:44px}
+.fc{background:#fff;border:1px solid #E8ECF2;border-radius:12px;padding:22px}
+.fc h3{font-size:14px;font-weight:700;color:#0F1829;margin-bottom:7px}
+.fc p{font-size:12px;color:#6B7A8D;line-height:1.6}
+.pbg{padding:64px 20px}
+.pgr{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:18px;margin-top:44px}
+.plan{border:2px solid #E8ECF2;border-radius:14px;padding:28px;position:relative;transition:all .2s}
+.plan:hover{border-color:#C5D8FF;box-shadow:0 4px 20px rgba(30,107,230,.08)}
+.plan.pop{border-color:#1E6BE6;box-shadow:0 4px 20px rgba(30,107,230,.14)}
+.pbadge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:#1E6BE6;color:#fff;border-radius:20px;padding:3px 14px;font-size:11px;font-weight:700;white-space:nowrap}
+.pn{font-size:10px;font-weight:700;color:#8896AA;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+.pp{font-size:34px;font-weight:900;color:#0F1829;letter-spacing:-1px;margin-bottom:4px}
+.pp span{font-size:15px;font-weight:500;color:#8896AA}
+.pd{font-size:12px;color:#6B7A8D;margin-bottom:20px;line-height:1.5}
+.pl{list-style:none;margin-bottom:24px}
+.pl li{font-size:12px;color:#4A5568;padding:5px 0;border-bottom:1px solid #F0F2F5;display:flex;align-items:center;gap:7px}
+.pl li:last-child{border:none}
+.pl li::before{content:'';width:15px;height:15px;border-radius:50%;flex-shrink:0;background:#EBF5FF url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8l3 3 7-7' stroke='%231E6BE6' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center/11px}
+.pbtn{width:100%;padding:11px;border-radius:7px;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:all .2s}
+.pbtn-o{background:#fff;border:1.5px solid #D0D8E8;color:#1A2234}
+.pbtn-o:hover{border-color:#1E6BE6;color:#1E6BE6}
+.pbtn-s{background:#1E6BE6;color:#fff;box-shadow:0 4px 10px #1E6BE625}
+.pbtn-s:hover{background:#1658CC}
+.cta{background:linear-gradient(135deg,#1E6BE6,#0F4FC4);padding:64px 20px;text-align:center;position:relative;overflow:hidden}
+.cta::before{content:'';position:absolute;top:-80px;left:-80px;width:280px;height:280px;background:rgba(255,255,255,.05);border-radius:50%}
+.cta h2{font-size:clamp(22px,5vw,34px);font-weight:900;color:#fff;letter-spacing:-.8px;margin-bottom:10px;position:relative;z-index:1}
+.cta p{font-size:15px;color:rgba(255,255,255,.8);max-width:440px;margin:0 auto 32px;position:relative;z-index:1}
+.ctaf{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1;max-width:460px;margin:0 auto 14px}
+.ctai{flex:1;min-width:190px;background:#fff;border:none;border-radius:8px;padding:12px 14px;font-size:14px;color:#1A2234;outline:none;font-family:inherit}
+.ctab{background:#0A3BA0;color:#fff;border:none;border-radius:8px;padding:12px 22px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.ctab:hover{background:#082E80}
+.ctan{font-size:11px;color:rgba(255,255,255,.55);position:relative;z-index:1}
+footer{background:#F5F7FC;border-top:1px solid #E8ECF2;padding:24px 20px;text-align:center}
+.fl{font-size:15px;font-weight:900;color:#1A2234;margin-bottom:5px}
+.fl span{color:#1E6BE6}
+/* AUTH */
+.aw{min-height:100vh;background:linear-gradient(160deg,#F0F5FF,#EBF0FF);display:flex;align-items:center;justify-content:center;padding:20px}
+.ab{background:#fff;border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.1);padding:32px;width:100%;max-width:390px}
+.alo{text-align:center;margin-bottom:24px}
+.ai{width:44px;height:44px;background:linear-gradient(135deg,#1E6BE6,#0F4FC4);border-radius:11px;display:flex;align-items:center;justify-content:center;margin:0 auto 9px;font-weight:900;color:#fff;font-size:14px}
+.aln{font-size:18px;font-weight:900;color:#0F1829;letter-spacing:-.5px}
+.aln span{color:#1E6BE6}
+.atit{font-size:17px;font-weight:800;color:#0F1829;text-align:center;margin-bottom:3px}
+.asub{font-size:12px;color:#8896AA;text-align:center;margin-bottom:20px}
+.dhint{background:#EBF5FF;border:1px solid #C5D8FF;border-radius:7px;padding:9px 12px;font-size:12px;color:#4A5568;margin-bottom:12px;line-height:1.5}
+.dhint strong{color:#1E6BE6}
+.adiv{text-align:center;color:#C0C8D8;font-size:11px;margin:14px 0;position:relative}
+.adiv::before,.adiv::after{content:'';position:absolute;top:50%;width:42%;height:1px;background:#E8ECF2}
+.adiv::before{left:0}.adiv::after{right:0}
+.alink{text-align:center;font-size:12px;color:#8896AA;margin-top:14px}
+.alink a{color:#1E6BE6;font-weight:600;cursor:pointer}
+.vi{width:56px;height:56px;background:#EBF5FF;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:24px}
+.cr{display:flex;gap:8px;justify-content:center;margin:18px 0}
+.ci{width:46px;height:52px;border:1.5px solid #D0D8E8;border-radius:9px;text-align:center;font-size:20px;font-weight:700;color:#1A2234;outline:none;transition:border .2s;background:#F8FAFF}
+.ci:focus{border-color:#1E6BE6;background:#fff;box-shadow:0 0 0 3px #1E6BE612}
+/* APP */
+.an{background:#fff;border-bottom:1px solid #E8ECF2;padding:0 14px;height:50px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.alo2{font-size:14px;font-weight:900;color:#0F1829;cursor:pointer}
+.alo2 span{color:#1E6BE6}
+.au{display:flex;align-items:center;gap:7px}
+.ava{width:26px;height:26px;background:#1E6BE6;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700}
+.aex{background:none;border:none;color:#8896AA;font-size:12px;cursor:pointer}
+.ats{background:#fff;border-bottom:1px solid #E8ECF2;display:flex;overflow-x:auto;scrollbar-width:none;position:sticky;top:50px;z-index:49}
+.ats::-webkit-scrollbar{display:none}
+.at{flex:1;min-width:68px;padding:10px 6px 9px;text-align:center;cursor:pointer;border-bottom:2px solid transparent;font-size:11px;font-weight:500;color:#8896AA;white-space:nowrap;transition:all .15s}
+.at.a{color:#1E6BE6;border-bottom-color:#1E6BE6;font-weight:700}
+.ab2{padding:12px;padding-bottom:20px;max-width:510px;margin:0 auto}
+.card{background:#fff;border:1px solid #E8ECF2;border-radius:11px;margin-bottom:9px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.ch{padding:10px 13px;display:flex;align-items:center;cursor:pointer;gap:7px;user-select:none;transition:background .15s}
+.ch:hover{background:#F8FAFF}
+.cd{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+.ct{font-weight:700;font-size:13px;color:#0F1829;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cs{font-size:9px;color:#8896AA;margin-top:1px}
+.badd{background:#EBF5FF;border:1px solid #C5D8FF;color:#1E6BE6;border-radius:6px;padding:3px 7px;font-size:9px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.bico{background:none;border:none;color:#C0C8D8;font-size:11px;cursor:pointer;padding:2px;flex-shrink:0}
+.bico:hover{color:#6B7A8D}
+.chl{padding-left:11px;padding-top:3px;padding-bottom:2px;background:#F8FAFF;border-top:1px solid #E8ECF2}
+.ir{display:flex;align-items:flex-start;background:#fff;border-radius:7px;padding:6px 10px;margin-bottom:3px;border:1px solid #E8ECF2;border-left:2px solid #1E6BE640}
+.in2{font-weight:600;font-size:12px;color:#0F1829;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.im{display:flex;gap:3px;margin-top:2px;flex-wrap:wrap;align-items:center}
+.tag{font-size:9px;border-radius:3px;padding:1px 5px;font-weight:600}
+.tb{color:#1E6BE6;background:#EBF5FF}
+.tg{color:#38A169;background:#F0FFF4}
+.to{color:#DD6B20;background:#FFFAF0}
+.tr2{color:#E53E3E;background:#FFF5F5}
+.tgr{color:#6B7A8D;background:#F5F7FA}
+.loc{font-size:11px;font-weight:700;color:#1E6BE6;background:#EBF5FF;border-radius:5px;padding:2px 7px;display:inline-flex;align-items:center}
+.slbl{font-size:9px;font-weight:700;color:#8896AA;letter-spacing:1px;text-transform:uppercase;margin-bottom:7px}
+.ph2{padding:7px 13px;display:flex;align-items:center;gap:7px;border-bottom:1px solid #E8ECF2}
+.phd{width:6px;height:6px;border-radius:50%}
+.phl{font-size:9px;font-weight:700;color:#8896AA;letter-spacing:1px;text-transform:uppercase}
+.pr{padding:10px 13px;border-bottom:1px solid #F0F4F8;cursor:pointer;transition:background .15s}
+.pr:hover{background:#F8FAFF}
+.pr:last-child{border:none}
+.prn{font-weight:600;font-size:13px;color:#0F1829}
+.pri{font-size:10px;color:#8896AA;margin-top:1px}
+.prr{text-align:right;flex-shrink:0;margin-left:10px}
+.prp{font-size:10px;color:#8896AA}
+.prg{font-size:14px;font-weight:800;color:#1E6BE6}
+.prs{font-size:9px;color:#8896AA;margin-top:2px}
+.prv{font-size:17px;font-weight:800;line-height:1.1}
+.sb{background:linear-gradient(135deg,#1E6BE6,#0F4FC4);border-radius:11px;padding:20px 18px;text-align:center;margin-bottom:10px}
+.vf{width:150px;height:85px;border:2px solid rgba(255,255,255,.45);border-radius:7px;margin:12px auto;position:relative}
+.vc{position:absolute;width:11px;height:11px;border-color:#fff;border-style:solid}
+.vc.tl{top:-2px;left:-2px;border-width:2px 0 0 2px}
+.vc.tr{top:-2px;right:-2px;border-width:2px 2px 0 0}
+.vc.bl{bottom:-2px;left:-2px;border-width:0 0 2px 2px}
+.vc.br{bottom:-2px;right:-2px;border-width:0 2px 2px 0}
+.sbtn{background:#fff;color:#1E6BE6;border:none;border-radius:7px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;width:100%;margin-top:3px}
+.mbox{background:#fff;border:1px solid #E8ECF2;border-radius:11px;padding:13px;margin-bottom:10px}
+.rf{background:#EBF5FF;border:1.5px solid #C5D8FF;border-radius:11px;padding:13px;margin-bottom:10px}
+.ry{background:#F0FFF4;border:1.5px solid #9AE6B4;border-radius:9px;padding:10px 13px}
+.rno{background:#FFF5F5;border:1.5px solid #FEB2B2;border-radius:9px;padding:10px 13px}
+.mov{position:fixed;inset:0;background:rgba(15,24,41,.45);display:flex;align-items:flex-end;z-index:200;backdrop-filter:blur(2px)}
+.mb2{background:#fff;border-radius:18px 18px 0 0;padding:20px;width:100%;max-width:510px;margin:0 auto;max-height:88vh;overflow-y:auto}
+.mt{font-size:15px;font-weight:800;color:#0F1829;margin-bottom:3px}
+.ms2{font-size:11px;color:#8896AA;margin-bottom:16px}
+.mts{display:flex;gap:5px;margin-bottom:12px}
+.mta{flex:1;padding:7px;border-radius:7px;border:1.5px solid #E8ECF2;background:#F8FAFF;color:#6B7A8D;font-size:11px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s}
+.mta.a{border-color:#1E6BE6;background:#EBF5FF;color:#1E6BE6;font-weight:700}
+.tp{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px}
+.tpi{padding:5px 10px;border-radius:18px;border:1.5px solid #E8ECF2;background:#F8FAFF;color:#6B7A8D;font-size:11px;cursor:pointer;transition:all .15s}
+.tpi.a{border-color:#1E6BE6;background:#EBF5FF;color:#1E6BE6;font-weight:600}
+.sws{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.sw{width:25px;height:25px;border-radius:5px;cursor:pointer;border:3px solid transparent;transition:border .15s}
+.sw.a{border-color:#1A2234}
+.db{border:2px solid #FEB2B2;border-radius:11px;padding:14px;background:#FFF5F5}
+.stabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px}
+.stab{padding:4px 9px;border-radius:14px;border:1px solid #E8ECF2;background:#F8FAFF;color:#6B7A8D;font-size:10px;font-weight:500;cursor:pointer}
+.stab.a{border-color:#1E6BE6;background:#EBF5FF;color:#1E6BE6;font-weight:700}
+.abtn{background:#1E6BE6;color:#fff;border:none;border-radius:7px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 3px 8px #1E6BE618}
+.abtn:hover{background:#1658CC}
+.abtn-s{background:#fff;border:1.5px solid #E8ECF2;color:#6B7A8D;border-radius:7px;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer}
+video#lv{width:100%;max-height:190px;object-fit:cover;background:#000;display:none;border-radius:11px 11px 0 0}
+canvas#sc{display:none}
+@media(max-width:580px){.sg{grid-template-columns:1fr}.st{border-right:none;border-bottom:1px solid #E8ECF2;padding:12px 0}.st:last-child{border:none}.mbody{grid-template-columns:1fr}.ctaf{flex-direction:column}.plan{padding:20px}.pgr{grid-template-columns:1fr}.ab{padding:22px 16px}}
 </style>
 </head>
 <body>
-
-<!-- Header -->
-<div style="padding:14px 16px 10px;border-bottom:1px solid #272A36">
-  <span style="font-size:20px;font-weight:800;letter-spacing:-.5px">🧪 LabPick</span>
-</div>
-
-<!-- Tabs content -->
-<div id="tab-warehouse" class="tab-content" style="padding:14px"></div>
-<div id="tab-stock" class="tab-content hidden" style="padding:14px"></div>
-<div id="tab-pick" class="tab-content hidden" style="padding:14px"></div>
-<div id="tab-scan" class="tab-content hidden" style="padding:14px"></div>
-
-<!-- Modal -->
-<div id="modal-overlay" class="hidden" onclick="closeModalIfOverlay(event)">
-  <div id="modal-box"></div>
-</div>
-
-<!-- Bottom nav -->
-<div id="bottom-nav">
-  <div class="nav-item active" data-tab="warehouse" onclick="switchTab('warehouse')">
-    <div class="nav-icon">🗄</div><div class="nav-label">Склад</div>
-  </div>
-  <div class="nav-item" data-tab="stock" onclick="switchTab('stock')">
-    <div class="nav-icon">📦</div><div class="nav-label">1С</div>
-  </div>
-  <div class="nav-item" data-tab="pick" onclick="switchTab('pick')">
-    <div class="nav-icon">📋</div><div class="nav-label">Сборка</div>
-  </div>
-  <div class="nav-item" data-tab="scan" onclick="switchTab('scan')">
-    <div class="nav-icon">📷</div><div class="nav-label">Сканер</div>
-  </div>
-</div>
-
+<div id="pl" style="display:block"></div>
+<div id="plo" style="display:none"></div>
+<div id="pr2" style="display:none"></div>
+<div id="pv" style="display:none"></div>
+<div id="pa" style="display:none"></div>
+<div class="mov hidden" id="mov" onclick="cbg(event)"><div class="mb2" id="mb2"></div></div>
+<canvas id="sc"></canvas>
+<video id="lv" playsinline muted></video>
 <script>
-// ── State ──────────────────────────────────────────────────────────────────
-const S = {
-  rooms:[], racks:[], shelves:[], spots:[], meta:[],
-  stock:[], techItems:[], techSheets:[], activeSheet:0,
-  productName:"", batchMass:"",
-  scanMode:"find", scanStatus:null, linkBarcode:null, linkTarget:null,
-  currentTab:"warehouse",
-  assignSpotId:null, assignMode:"search", assignSearch:"",
-  manualForm:{name:"",inci:"",expiry:"",qty:"",type:""},
-  scanDone:null,
-  modal:null, modalForm:{}, editId:null,
-};
+const LH=`<nav><div class="logo" onclick="sp('l')"><div class="logo-icon">ГЧ</div><span class="logo-txt">Где<span>Что</span></span></div><div class="nav-btns"><button class="nav-in" onclick="sp('lo')">Войти</button><button class="nav-ct" onclick="sp('r')">Начать бесплатно</button></div></nav>
+<section class="hero"><div class="hbadge">Для малых производств любой сферы</div><h1>Находи быстро —<br><span>управляй просто</span></h1><p class="hp1">Мобильный сервис, упрощающий поиск на складе нужных позиций.</p><p class="hp2">Сканируйте штрих-коды, собирайте партии по тех картам — прямо с телефона, без ноутбука.</p>
+<div class="hbtns"><button class="btn-main" onclick="sp('r')">Начать бесплатно — 14 дней</button><button class="btn-ol" onclick="dL()">Смотреть демо</button></div>
+<div class="mockup"><div class="mb"><div class="mds"><span></span><span></span><span></span></div><div class="mu">gdechto.app</div></div>
+<div class="mbody"><div class="mc"><div class="mct">Сборка — Синий крем</div><div class="mr"><span>Гиалуроновая к-та</span><span class="ml">Ст.А/П1</span></div><div class="mr"><span>Глицерин</span><span class="ml">Ст.Б/П2</span></div><div class="mr"><span>Аллантоин</span><span class="mw">Не задано</span></div><div class="mr"><span>Скваланe</span><span class="ml">Холод.</span></div></div>
+<div><div class="ms"><div><div style="color:#fff;font-size:9px;font-weight:700">Сканер</div><div style="color:rgba(255,255,255,.7);font-size:8px;margin-top:2px">Наведите на штрих-код</div></div><div class="msb">Нужен</div></div>
+<div style="background:#fff;border:1px solid #E8ECF2;border-radius:9px;padding:10px 12px;font-size:9px;color:#4A5568;line-height:1.8"><div style="font-weight:700;color:#1A2234;margin-bottom:4px">Структура склада</div>Производство<br><span style="padding-left:10px;display:block">Стеллаж А — Активы</span><span style="padding-left:20px;display:block;color:#1E6BE6;font-weight:600">Полка 1 / 5 позиций</span></div></div></div></div></section>
+<div class="stats"><div class="sg"><div class="st"><div class="sn">3 мин</div><div class="sl">на настройку склада</div></div><div class="st"><div class="sn">0 ₽</div><div class="sl">стоимость старта</div></div><div class="st"><div class="sn">с телефона</div><div class="sl">без компьютера и 1С</div></div></div></div>
+<div id="how"><div class="ls"><div class="ltag">Как это работает</div><div class="ltit">Три шага до порядка на складе</div><div class="lsb">Не нужно внедрять сложные системы. Настройте за один обход склада.</div>
+<div class="steps"><div class="step"><div class="snum">1</div><h3>Настройте структуру</h3><p>Добавьте помещения, стеллажи, полки и места. Назначьте цвета для зон.</p></div><div class="step"><div class="snum">2</div><h3>Привяжите позиции</h3><p>Загрузите выгрузку из 1С или добавьте вручную. Сканируйте штрих-коды.</p></div><div class="step"><div class="snum">3</div><h3>Собирайте партии</h3><p>Загружайте тех карты из Excel. Сервис покажет что взять, где лежит, хватает ли.</p></div></div></div></div>
+<div class="fbg"><div class="fi"><div class="ltag">Возможности</div><div class="ltit">Всё что нужно производству</div><div class="fg2"><div class="fc"><h3>Работает с телефона</h3><p>Открывается в браузере. Устанавливается на главный экран. Не нужен ноутбук.</p></div><div class="fc"><h3>Сканер штрих-кодов</h3><p>Наведите камеру — узнаете что это, где лежит и нужна ли позиция для партии.</p></div><div class="fc"><h3>Тех карты из Excel</h3><p>Несколько тех карт одним файлом. Список сборки по фазам с адресом и количеством.</p></div><div class="fc"><h3>Контроль сроков</h3><p>Срок годности виден в списке сборки. Просроченные и заканчивающиеся выделяются.</p></div><div class="fc"><h3>Гибкая структура</h3><p>Помещение — Стеллаж — Полка — Место. Любая глубина, цвета для зон, быстрый поиск.</p></div><div class="fc"><h3>Интеграция с 1С</h3><p>Выгрузка остатков из 1С. Сервис покажет наличие и хватит ли на партию.</p></div></div></div></div>
+<div class="pbg" id="pricing"><div style="max-width:880px;margin:0 auto"><div class="ltag">Тарифы</div><div class="ltit">Простые и честные цены</div><div class="lsb">Начните бесплатно. Переходите когда будете готовы.</div>
+<div class="pgr"><div class="plan"><div class="pn">Подумаю / потестирую</div><div class="pp">0 <span>₽/мес</span></div><div class="pd">14 дней полного доступа, затем ограниченный бесплатный план.</div><ul class="pl"><li>До 50 позиций на складе</li><li>1 помещение</li><li>Тех карты из Excel</li><li>Сканер штрих-кодов</li><li>14 дней полного доступа</li></ul><button class="pbtn pbtn-o" onclick="sp('r')">Начать бесплатно</button></div>
+<div class="plan pop"><div class="pbadge">Популярный</div><div class="pn">Работаем!</div><div class="pp">990 <span>₽/мес</span></div><div class="pd">Полный доступ без ограничений для активного производства.</div><ul class="pl"><li>Неограниченно позиций</li><li>Любое количество помещений</li><li>Несколько пользователей</li><li>Интеграция с 1С</li><li>Приоритетная поддержка</li><li>Экспорт данных</li></ul><button class="pbtn pbtn-s" onclick="sp('r')">Попробовать 14 дней</button></div></div></div></div>
+<section class="cta"><h2>Начните прямо сейчас</h2><p>Бесплатно. Без установки. Работает на любом телефоне через браузер.</p><div class="ctaf"><input class="ctai" id="he" type="email" placeholder="Ваш email"/><button class="ctab" onclick="hR()">Зарегистрироваться</button></div><div class="ctan" id="cn">Нажимая кнопку, вы соглашаетесь с условиями использования</div></section>
+<footer><div class="fl">Где<span>Что</span></div><p style="font-size:11px;color:#8896AA">Мобильный сервис для малого производства · 2026</p></footer>`;
 
-// ── Palette ────────────────────────────────────────────────────────────────
+const LOH=`<div class="aw"><div class="ab"><div class="alo"><div class="ai">ГЧ</div><div class="aln">Где<span>Что</span></div></div><div class="atit">Вход в сервис</div><div class="asub">Введите email и пароль</div><div class="dhint">Демо-доступ: логин <strong>gde</strong>, пароль <strong>chto</strong></div><div class="fg"><label class="lbl">Email или логин</label><input class="inp" id="le" type="text" placeholder="gde или email@company.ru" autocomplete="username"/><div class="err" id="lerr">Неверный логин или пароль</div></div><div class="fg"><label class="lbl">Пароль</label><input class="inp" id="lp" type="password" placeholder="Введите пароль" autocomplete="current-password" onkeydown="if(event.key==='Enter')dLo()"/></div><button class="btn-blue" onclick="dLo()" style="margin-top:8px">Войти</button><div class="adiv">или</div><button class="btn-ghost" onclick="dL()" style="width:100%">Войти как демо-пользователь</button><div class="alink">Нет аккаунта? <a onclick="sp('r')">Зарегистрироваться бесплатно</a></div><div class="alink" style="margin-top:6px"><a onclick="sp('l')">На главную</a></div></div></div>`;
 
-function C_ph(p){const m={"А":"#6EC6A0","A":"#6EC6A0","В":"#7BAEE8","B":"#7BAEE8","С":"#C8A8E8","C":"#C8A8E8","Д":"#E8C87A","D":"#E8C87A"};return m[p]||"#8A8EA8";}
+const REH=`<div class="aw"><div class="ab"><div class="alo"><div class="ai">ГЧ</div><div class="aln">Где<span>Что</span></div></div><div class="atit">Создать аккаунт</div><div class="asub">14 дней бесплатно — без карты</div><div class="fg"><label class="lbl">Имя</label><input class="inp" id="rn" type="text" placeholder="Иван Иванов"/></div><div class="fg"><label class="lbl">Email</label><input class="inp" id="re" type="email" placeholder="email@company.ru"/><div class="err" id="rerr">Введите корректный email</div></div><div class="fg"><label class="lbl">Пароль</label><input class="inp" id="rp" type="password" placeholder="Минимум 6 символов" onkeydown="if(event.key==='Enter')dRe()"/><div class="err" id="rperr">Минимум 6 символов</div></div><div style="margin-bottom:8px"><label style="display:flex;align-items:flex-start;gap:7px;cursor:pointer;font-size:12px;color:#6B7A8D"><input type="checkbox" id="ra" style="margin-top:2px;flex-shrink:0"/><span>Согласен с условиями использования</span></label><div class="err" id="raerr">Необходимо согласие</div></div><button class="btn-blue" onclick="dRe()" style="margin-top:10px">Создать аккаунт</button><div class="alink">Уже есть аккаунт? <a onclick="sp('lo')">Войти</a></div><div class="alink" style="margin-top:6px"><a onclick="sp('l')">На главную</a></div></div></div>`;
 
-// ── Transliteration fuzzy search ───────────────────────────────────────────
+const VEH=`<div class="aw"><div class="ab" style="text-align:center"><div class="alo"><div class="ai">ГЧ</div></div><div class="vi">&#9993;</div><div class="atit">Подтвердите email</div><div class="asub" id="vs">Отправили код на <strong id="vel"></strong></div><div class="cr"><input class="ci" maxlength="1" type="text" inputmode="numeric" oninput="ci(this,0)" onkeydown="ck(this,event,0)"/><input class="ci" maxlength="1" type="text" inputmode="numeric" oninput="ci(this,1)" onkeydown="ck(this,event,1)"/><input class="ci" maxlength="1" type="text" inputmode="numeric" oninput="ci(this,2)" onkeydown="ck(this,event,2)"/><input class="ci" maxlength="1" type="text" inputmode="numeric" oninput="ci(this,3)" onkeydown="ck(this,event,3)"/></div><div class="err" id="cerr" style="text-align:center;margin-bottom:8px;display:none">Неверный код</div><div style="font-size:12px;color:#38A169;text-align:center;margin-bottom:8px;display:none" id="cok">Код подтверждён!</div><button class="btn-blue" onclick="vC()">Подтвердить</button><div class="alink" style="margin-top:12px">Не получили? <a onclick="rC()">Отправить повторно</a></div><div style="font-size:10px;color:#C0C8D8;margin-top:8px">Для демо введите: <strong>1234</strong></div></div></div>`;
+
+const S={u:null,pe:null,pn:null,rooms:[],racks:[],shelves:[],spots:[],meta:[],stock:[],tech:[],sheets:[],as:0,pn2:'',bm:'',sm:'find',ss:null,lb:null,lt:null,sid:null,am:'search',as2:'',mf:{},ein:null,eif:{},modal:null,mf2:{},eid:null,mpid:null,dm:'',df:null,tab:'warehouse',hi:null};
+const EX={};
+const PAL=["#1E6BE6","#38A169","#DD6B20","#7C3AED","#E53E3E","#0891B2","#D97706","#059669","#DC2626","#6D28D9","#1E40AF","#065F46"];
+const TYP=["Порошок","Жидкость","Канистра","Гель","Масло","Воск","Прочее"];
+const PHC={A:"#1E6BE6",А:"#1E6BE6",B:"#38A169",В:"#38A169",C:"#DD6B20",С:"#DD6B20",D:"#7C3AED",Д:"#7C3AED","?":"#8896AA"};
 const TR={а:"a",б:"b",в:"v",г:"g",д:"d",е:"e",ё:"yo",ж:"zh",з:"z",и:"i",й:"y",к:"k",л:"l",м:"m",н:"n",о:"o",п:"p",р:"r",с:"s",т:"t",у:"u",ф:"f",х:"h",ц:"ts",ч:"ch",ш:"sh",щ:"sch",ъ:"",ы:"y",ь:"",э:"e",ю:"yu",я:"ya"};
-const tl=s=>s.toLowerCase().split("").map(c=>TR[c]||c).join("");
-const fuzzy=(q,t)=>{if(!q)return true;const ql=q.toLowerCase(),tl2=t.toLowerCase(),qt=tl(q),tt=tl(t);return tl2.includes(ql)||tt.includes(qt)||tt.includes(ql)||tl2.includes(qt);};
+const tl=s=>s.toLowerCase().split('').map(c=>TR[c]||c).join('');
+const fz=(q,t)=>{if(!q)return true;const ql=q.toLowerCase(),t2=t.toLowerCase(),qt=tl(q),tt=tl(t);return t2.includes(ql)||tt.includes(qt)||tt.includes(ql)||t2.includes(qt);};
+const h=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const uid=()=>Date.now()+'_'+Math.random().toString(36).slice(2);
+function sv(){try{['rooms','racks','shelves','spots','meta'].forEach(k=>localStorage.setItem('gc_'+k,JSON.stringify(S[k])));}catch(e){}}
+function ld(){try{['rooms','racks','shelves','spots','meta'].forEach(k=>{const v=localStorage.getItem('gc_'+k);if(v)S[k]=JSON.parse(v);});}catch(e){}}
+function svm(name,patch){const i=S.meta.findIndex(x=>x.tradeName.toLowerCase()===name.toLowerCase());if(i>=0)S.meta[i]={...S.meta[i],...patch};else S.meta.push({tradeName:name,...patch});S.stock=S.stock.map(x=>x.tradeName.toLowerCase()===name.toLowerCase()?{...x,...patch}:x);sv();}
+function ms(raw){return raw.map(item=>{const m=S.meta.find(x=>x.tradeName.toLowerCase()===item.tradeName.toLowerCase());return{...item,spotId:m?.spotId||'',barcode:m?.barcode||'',inci:m?.inci||'',expiry:m?.expiry||item.expiry};});}
+function gis(sid){return S.meta.filter(m=>m.spotId===sid).map(m=>{const s=S.stock.find(x=>x.tradeName.toLowerCase()===m.tradeName.toLowerCase());return s?{...s,...m}:{...m,qty:m.qty||0};});}
+function gsp(sid){const sp=S.spots.find(s=>s.id===sid);if(!sp)return'';const sh=S.shelves.find(s=>s.id===sp.shelfId);const ra=sh?S.racks.find(r=>r.id===sh.rackId):null;const ro=ra?S.rooms.find(r=>r.id===ra.roomId):null;return[ro?.name,ra?.name,sh?.name,sp?.name].filter(Boolean).join(' › ');}
+function fib(bc){const m=S.meta.find(x=>x.barcode===bc);if(!m)return null;const s=S.stock.find(x=>x.tradeName.toLowerCase()===m.tradeName.toLowerCase());return s?{...s,...m}:{...m,qty:m.qty||0};}
+function cri(rid){const rids=S.racks.filter(r=>r.roomId===rid).map(r=>r.id);const sids=S.shelves.filter(s=>rids.includes(s.rackId)).map(s=>s.id);const pids=S.spots.filter(s=>sids.includes(s.shelfId)).map(s=>s.id);return S.meta.filter(m=>pids.includes(m.spotId)).length;}
+function cra(rid){const sids=S.shelves.filter(s=>s.rackId===rid).map(s=>s.id);const pids=S.spots.filter(s=>sids.includes(s.shelfId)).map(s=>s.id);return S.meta.filter(m=>pids.includes(m.spotId)).length;}
+function eb(d){if(!d)return'';const days=Math.floor((new Date(d)-Date.now())/86400000);if(days<0)return'<span class="tag tr2">Просрок</span>';if(days<30)return`<span class="tag to">${days}д</span>`;return`<span class="tag tgr">${d.slice(0,7)}</span>`;}
+function tp(id){const el=document.getElementById(id);if(el)el.style.display=el.style.display==='none'?'block':'none';}
 
-// ── Persist (localStorage) ─────────────────────────────────────────────────
-function save(){
-  try{localStorage.setItem("lp_rooms",JSON.stringify(S.rooms));localStorage.setItem("lp_racks",JSON.stringify(S.racks));localStorage.setItem("lp_shelves",JSON.stringify(S.shelves));localStorage.setItem("lp_spots",JSON.stringify(S.spots));localStorage.setItem("lp_meta",JSON.stringify(S.meta));}catch(e){}
+function sp(p){
+  const ids={l:'pl',lo:'plo',r:'pr2',v:'pv',a:'pa'};
+  Object.values(ids).forEach(id=>document.getElementById(id).style.display='none');
+  const el=document.getElementById(ids[p]);el.style.display='block';
+  if(p==='l')el.innerHTML=LH;
+  else if(p==='lo')el.innerHTML=LOH;
+  else if(p==='r')el.innerHTML=REH;
+  else if(p==='v')el.innerHTML=VEH;
+  else if(p==='a'){ld();el.innerHTML=rAS();rT();}
+  window.scrollTo(0,0);
 }
-const C = {
-  accent:"#6EC6A0",accentDim:"#2E5A48",accentBg:"#6EC6A015",
-  warn:"#E8A87C",danger:"#E07070",dangerBg:"#E0707015",
-  text:"#E8EAF2",muted:"#5A5D70",muted2:"#8A8EA8",
-  card:"#161820",card2:"#1E2028",card3:"#22253A",border:"#272A36",
-  palette:["#6EC6A0","#7BAEE8","#C8A8E8","#E8C87A","#E8A87C","#E07070","#88AACC","#A8D8A8","#F0B8D0","#B8D0F0","#D4B8F0","#F0D4A8"],
-  roomColors:["#7BAEE8","#C8A8E8","#E8C87A","#88AACC","#A8B8E8"],
-  rackColors:["#6EC6A0","#7BE8B0","#50C8A0","#88E8C0","#40B090"],
-  TYPES:["Порошок","Жидкость","Канистра","Гель","Масло","Воск","Прочее"],
-  PHCOL:{А:"#6EC6A0",A:"#6EC6A0",В:"#7BAEE8",B:"#7BAEE8",С:"#C8A8E8",C:"#C8A8E8",Д:"#E8C87A",D:"#E8C87A","?":"#8A8EA8"},
-};
-function load(){
-  try{
-    const r=localStorage.getItem("lp_rooms"); if(r) S.rooms=JSON.parse(r);
-    const ra=localStorage.getItem("lp_racks"); if(ra) S.racks=JSON.parse(ra);
-    const sh=localStorage.getItem("lp_shelves"); if(sh) S.shelves=JSON.parse(sh);
-    const sp=localStorage.getItem("lp_spots"); if(sp) S.spots=JSON.parse(sp);
-    const m=localStorage.getItem("lp_meta"); if(m) S.meta=JSON.parse(m);
-  }catch(e){}
-}
-
-// ── Parsers ────────────────────────────────────────────────────────────────
-function parse1C(text){
-  return text.trim().split("\n").map((line,i)=>{
-    const c=line.split(/[;\t]/).map(s=>s.replace(/^"|"$/g,"").trim());
-    if(!c[0]||["наименование","name","номенклатура"].includes(c[0].toLowerCase())) return null;
-    return{id:"i"+i,tradeName:c[0],qty:parseFloat(c[1]?.replace(",","."))||0,expiry:c[2]||"",inci:"",barcode:"",spotId:""};
-  }).filter(Boolean);
-}
-function parseTechText(text){
-  let ph="";
-  return text.trim().split("\n").map(line=>{
-    const c=line.split(/\t/).map(s=>s.trim());
-    if(c[0]) ph=c[0].toUpperCase();
-    if(!c[1]||c[1]==="Торговое наименование") return null;
-    return{phase:ph||"А",trade:c[1],inci:c[2]||"",pct:parseFloat(c[3]?.replace(",","."))||0};
-  }).filter(Boolean);
-}
-function parseTechRows(rows){
-  const isA=rows.some(r=>{const v=String(r[1]||"").trim();return v.length===1&&/^[А-ЯA-Z]$/.test(v);});
-  return isA?parseTechRowsA(rows):parseTechRowsB(rows);
-}
-function parseTechRowsA(rows){
-  let ph="";const items=[];
-  for(const row of rows){
-    const phase=String(row[1]||"").trim(),trade=String(row[2]||"").trim(),inci=String(row[3]||"").trim();
-    const pct=parseFloat(String(row[5]||row[4]||"").replace(",","."));
-    if(phase.length===1&&/^[А-ЯA-Z]$/.test(phase)) ph=phase.toUpperCase();
-    if(!trade||trade==="Торговое наименование"||trade==="Наименование") continue;
-    if(isNaN(pct)||pct<=0) continue;
-    items.push({phase:ph||"А",trade,inci,pct});
-  }
-  return items;
-}
-function parseSvodnыSheet(rows){
-  const products=[];let currentName="",currentItems=[],inTable=false;
-  for(const row of rows){
-    const c1=String(row[1]||"").trim(),c2=String(row[2]||"").trim(),c3=String(row[3]||"").trim();
-    if(c1==="Торговое наименование"||c1==="Наименование"){inTable=true;continue;}
-    const pct=parseFloat(c3.replace(",","."));
-    if(inTable&&c1&&!isNaN(pct)&&pct>0){currentItems.push({phase:"А",trade:c1,inci:c2,pct});continue;}
-    if(inTable&&(!c1||(!isNaN(parseFloat(c1))&&currentItems.length>0))){
-      if(currentName&&currentItems.length>0) products.push({name:currentName,items:currentItems});
-      currentName="";currentItems=[];inTable=false;continue;
-    }
-    if(!inTable&&c1&&c1!=="Торговое наименование"&&isNaN(parseFloat(c3))){
-      if(currentName&&currentItems.length>0) products.push({name:currentName,items:currentItems});
-      currentName=c1;currentItems=[];inTable=false;
-    }
-  }
-  if(currentName&&currentItems.length>0) products.push({name:currentName,items:currentItems});
-  return products;
-}
-function parseTechRowsB(rows){const p=parseSvodnыSheet(rows);return p.length>0?p[0].items:[];}
-
-// ── Helpers ────────────────────────────────────────────────────────────────
-function mergeStock(raw){
-  return raw.map(item=>{
-    const m=S.meta.find(x=>x.tradeName.toLowerCase()===item.tradeName.toLowerCase());
-    return{...item,spotId:m?.spotId||"",barcode:m?.barcode||"",inci:m?.inci||"",expiry:m?.expiry||item.expiry};
-  });
-}
-function saveMeta(tradeName,patch){
-  const idx=S.meta.findIndex(x=>x.tradeName.toLowerCase()===tradeName.toLowerCase());
-  if(idx>=0) S.meta[idx]={...S.meta[idx],...patch};
-  else S.meta.push({tradeName,...patch});
-  S.stock=S.stock.map(x=>x.tradeName.toLowerCase()===tradeName.toLowerCase()?{...x,...patch}:x);
-  save();
-}
-function getIngsBySpot(spotId){
-  return S.meta.filter(m=>m.spotId===spotId).map(m=>{
-    const s=S.stock.find(x=>x.tradeName.toLowerCase()===m.tradeName.toLowerCase());
-    return s?{...s,...m}:{...m,qty:m.qty||0};
-  });
-}
-function getSpotPath(spotId){
-  const spot=S.spots.find(s=>s.id===spotId);if(!spot) return "";
-  const shelf=S.shelves.find(s=>s.id===spot.shelfId);
-  const rack=shelf?S.racks.find(r=>r.id===shelf.rackId):null;
-  const room=rack?S.rooms.find(r=>r.id===rack.roomId):null;
-  return[room?.name,rack?.name,shelf?.name,spot?.name].filter(Boolean).join(" › ");
-}
-function findIngByBarcode(bc){
-  const m=S.meta.find(x=>x.barcode===bc);if(!m) return null;
-  const s=S.stock.find(x=>x.tradeName.toLowerCase()===m.tradeName.toLowerCase());
-  return s?{...s,...m}:{...m,qty:m.qty||0};
-}
-function countRoomIngs(roomId){
-  const rids=S.racks.filter(r=>r.roomId===roomId).map(r=>r.id);
-  const sids=S.shelves.filter(s=>rids.includes(s.rackId)).map(s=>s.id);
-  const pids=S.spots.filter(s=>sids.includes(s.shelfId)).map(s=>s.id);
-  return S.meta.filter(m=>pids.includes(m.spotId)).length;
-}
-function countRackIngs(rackId){
-  const sids=S.shelves.filter(s=>s.rackId===rackId).map(s=>s.id);
-  const pids=S.spots.filter(s=>sids.includes(s.shelfId)).map(s=>s.id);
-  return S.meta.filter(m=>pids.includes(m.spotId)).length;
-}
-function expiryBadge(d){
-  if(!d) return "";
-  const days=Math.floor((new Date(d)-Date.now())/86400000);
-  const [col,bg,lbl]=days<0?[C.danger,"#E0707020","Просрок"]:days<30?[C.warn,"#E8A87C20",days+"д"]:[C.muted2,C.card2,d.slice(0,7)];
-  return `<span class="badge" style="color:${col};background:${bg}">${lbl}</span>`;
-}
-function uid(){return Date.now()+"_"+Math.random().toString(36).slice(2);}
-function h(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
-
-// ── Delete helpers ─────────────────────────────────────────────────────────
-function showDeleteConfirm(msg, onConfirm){
-  S.modal="deleteConfirm";
-  S.deleteConfirmMsg=msg;
-  S.deleteConfirmFn=onConfirm;
-  renderModal();
-  document.getElementById("modal-overlay").classList.remove("hidden");
-}
-function deleteRoom(id){
-  const item=S.rooms.find(x=>x.id===id);
-  showDeleteConfirm("Удалить помещение «"+(item?.name||"")+"»? Все стеллажи и полки внутри тоже удалятся.", ()=>{
-    const rids=S.racks.filter(r=>r.roomId===id).map(r=>r.id);
-    const sids=S.shelves.filter(s=>rids.includes(s.rackId)).map(s=>s.id);
-    const pids=S.spots.filter(s=>sids.includes(s.shelfId)).map(s=>s.id);
-    S.meta=S.meta.map(x=>pids.includes(x.spotId)?{...x,spotId:""}:x);
-    S.spots=S.spots.filter(x=>!pids.includes(x.id));
-    S.shelves=S.shelves.filter(x=>!sids.includes(x.id));
-    S.racks=S.racks.filter(x=>!rids.includes(x.id));
-    S.rooms=S.rooms.filter(x=>x.id!==id);
-    save();closeModal();render();
-  });
-}
-function deleteRack(id){
-  const item=S.racks.find(x=>x.id===id);
-  showDeleteConfirm("Удалить стеллаж «"+(item?.name||"")+"»?", ()=>{
-    const sids=S.shelves.filter(s=>s.rackId===id).map(s=>s.id);
-    const pids=S.spots.filter(s=>sids.includes(s.shelfId)).map(s=>s.id);
-    S.meta=S.meta.map(x=>pids.includes(x.spotId)?{...x,spotId:""}:x);
-    S.spots=S.spots.filter(x=>!pids.includes(x.id));
-    S.shelves=S.shelves.filter(x=>x.rackId!==id);
-    S.racks=S.racks.filter(x=>x.id!==id);
-    save();closeModal();render();
-  });
-}
-function deleteShelf(id){
-  const item=S.shelves.find(x=>x.id===id);
-  showDeleteConfirm("Удалить полку «"+(item?.name||"")+"»?", ()=>{
-    const pids=S.spots.filter(s=>s.shelfId===id).map(s=>s.id);
-    S.meta=S.meta.map(x=>pids.includes(x.spotId)?{...x,spotId:""}:x);
-    S.spots=S.spots.filter(x=>x.shelfId!==id);
-    S.shelves=S.shelves.filter(x=>x.id!==id);
-    save();closeModal();render();
-  });
-}
-function deleteSpot(id){
-  const item=S.spots.find(x=>x.id===id);
-  showDeleteConfirm("Удалить место «"+(item?.name||"")+"»?", ()=>{
-    S.meta=S.meta.map(x=>x.spotId===id?{...x,spotId:""}:x);
-    S.spots=S.spots.filter(x=>x.id!==id);
-    save();closeModal();render();
-  });
-}
-
-// ── Tab switching ──────────────────────────────────────────────────────────
-function switchTab(tab){
-  if(tab!=="warehouse") S.highlightIng=null;
-  S.currentTab=tab;
-  document.querySelectorAll(".tab-content").forEach(el=>el.classList.add("hidden"));
-  document.querySelectorAll(".nav-item").forEach(el=>el.classList.remove("active"));
-  document.getElementById("tab-"+tab).classList.remove("hidden");
-  document.querySelector(`[data-tab="${tab}"]`).classList.add("active");
-  render();
-}
-
-// ── Expand state ───────────────────────────────────────────────────────────
-const expanded={};
-function toggleExpand(id){expanded[id]=!expanded[id];render();}
-
-// ── Render ─────────────────────────────────────────────────────────────────
-function render(){
-  const tab=S.currentTab;
-  if(tab==="warehouse") renderWarehouse();
-  else if(tab==="stock") renderStock();
-  else if(tab==="pick") renderPick();
-  else if(tab==="scan") renderScan();
-}
-
-// ── WAREHOUSE ──────────────────────────────────────────────────────────────
-function renderWarehouse(){
-  const el=document.getElementById("tab-warehouse");
-  let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-    <span class="sec-head" style="margin:0">СТРУКТУРА СКЛАДА</span>
-    <button class="btn-add" style="font-size:12px;padding:6px 12px" onclick="openModal('room')">+ Помещение</button>
-  </div>`;
-  if(!S.rooms.length){
-    html+=`<div style="text-align:center;color:${C.muted};padding:50px 16px;line-height:2.2"><div style="font-size:32px;margin-bottom:8px">🏭</div>Добавьте помещение<br><span style="font-size:12px">Помещение → Стеллаж → Полка → Место → Ингредиент</span></div>`;
-  }
-  for(const room of S.rooms){
-    const roomRacks=S.racks.filter(r=>r.roomId===room.id);
-    const ingCount=countRoomIngs(room.id);
-    const isOpen=expanded["room_"+room.id];
-    html+=`<div class="level-card">
-      <div class="level-header" style="border-left:3px solid ${room.color}" onclick="toggleExpand('room_${room.id}')">
-        <span style="width:14px;height:14px;border-radius:3px;background:${room.color};display:inline-block;flex-shrink:0;margin-right:10px"></span>
-        <div style="flex:1;min-width:0">
-          <div class="level-title">${h(room.name)}</div>
-          <div class="level-sub">${roomRacks.length} стеллажей · ${ingCount} ингр.</div>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;margin-left:8px">
-          <button class="btn-add" onclick="event.stopPropagation();openModal('rack','${room.id}')">+ Стеллаж</button>
-          <button class="btn-icon" onclick="event.stopPropagation();openEdit('room','${room.id}')">✏️</button>
-          <button class="btn-icon" onclick="event.stopPropagation();deleteRoom('${room.id}')">🗑</button>
-          <span style="color:${C.muted};font-size:11px">${isOpen?"▲":"▼"}</span>
-        </div>
-      </div>
-      ${isOpen?`<div class="level-children">${renderRacks(room)}</div>`:""}
-    </div>`;
-  }
-  el.innerHTML=html;
-}
-function renderRacks(room){
-  const roomRacks=S.racks.filter(r=>r.roomId===room.id);
-  if(!roomRacks.length) return `<div style="font-size:11px;color:${C.muted};padding:4px 0 8px">Нет стеллажей</div>`;
-  return roomRacks.map(rack=>{
-    const rackShelves=S.shelves.filter(s=>s.rackId===rack.id);
-    const ingCount=countRackIngs(rack.id);
-    const isOpen=expanded["rack_"+rack.id];
-    return `<div class="level-card">
-      <div class="level-header" style="border-left:3px solid ${rack.color}" onclick="toggleExpand('rack_${rack.id}')">
-        <span style="width:14px;height:14px;border-radius:3px;background:${rack.color};display:inline-block;flex-shrink:0;margin-right:10px"></span>
-        <div style="flex:1;min-width:0">
-          <div class="level-title">${h(rack.name)}</div>
-          <div class="level-sub">${rackShelves.length} полок · ${ingCount} ингр.</div>
-        </div>
-        <div style="display:flex;gap:5px;align-items:center;flex-shrink:0;margin-left:8px">
-          <button class="btn-small" onclick="event.stopPropagation();openModal('shelf','${rack.id}')">+ Полка</button>
-          <button class="btn-icon" onclick="event.stopPropagation();openEdit('rack','${rack.id}')">✏️</button>
-          <button class="btn-icon" onclick="event.stopPropagation();deleteRack('${rack.id}')">🗑</button>
-          <span style="color:${C.muted};font-size:11px">${isOpen?"▲":"▼"}</span>
-        </div>
-      </div>
-      ${isOpen?`<div class="level-children">${renderShelves(rack)}</div>`:""}
-    </div>`;
-  }).join("");
-}
-function renderShelves(rack){
-  const rackShelves=S.shelves.filter(s=>s.rackId===rack.id);
-  if(!rackShelves.length) return `<div style="font-size:11px;color:${C.muted};padding:4px 0 8px">Нет полок</div>`;
-  return rackShelves.map(shelf=>{
-    const shelfSpots=S.spots.filter(s=>s.shelfId===shelf.id);
-    const isOpen=expanded["shelf_"+shelf.id];
-    return `<div class="level-card">
-      <div class="level-header" style="border-left:3px solid ${shelf.color||'#7BAEE8'}" onclick="toggleExpand('shelf_${shelf.id}')">
-        <span style="width:14px;height:14px;border-radius:3px;background:${shelf.color||'#7BAEE8'};display:inline-block;flex-shrink:0;margin-right:10px"></span>
-        <div style="flex:1;min-width:0">
-          <div class="level-title">${h(shelf.name)}</div>
-          <div class="level-sub">${shelfSpots.length} мест</div>
-        </div>
-        <div style="display:flex;gap:5px;align-items:center;flex-shrink:0;margin-left:8px">
-          <button class="btn-small" onclick="event.stopPropagation();openModal('spot','${shelf.id}')">+ Место</button>
-          <button class="btn-icon" onclick="event.stopPropagation();openEdit('shelf','${shelf.id}')">✏️</button>
-          <button class="btn-icon" onclick="event.stopPropagation();deleteShelf('${shelf.id}')">🗑</button>
-          <span style="color:${C.muted};font-size:11px">${isOpen?"▲":"▼"}</span>
-        </div>
-      </div>
-      ${isOpen?`<div class="level-children">${renderSpots(shelf,rack)}</div>`:""}
-    </div>`;
-  }).join("");
-}
-function renderSpots(shelf,rack){
-  const shelfSpots=S.spots.filter(s=>s.shelfId===shelf.id);
-  if(!shelfSpots.length) return `<div style="font-size:11px;color:${C.muted};padding:4px 0 8px">Нет мест</div>`;
-  return shelfSpots.map(spot=>{
-    const ings=getIngsBySpot(spot.id);
-    const isOpen=expanded["spot_"+spot.id];
-    const ingsHtml=ings.map(ing=>`
-      <div id="ing_${ing.tradeName}" class="ing-card" style="border-left-color:${spot.color||'#2E5A48'};${S.highlightIng&&(ing.tradeName===S.highlightIng||fuzzy(S.highlightIng,ing.tradeName))?"border-left:3px solid "+C.accent+";box-shadow:0 0 0 1px "+C.accent+"44":""}">
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:600;font-size:13px;color:${C.text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h(ing.tradeName)}</div>
-          <div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap;align-items:center">
-            ${ing.type?`<span style="font-size:9px;color:${C.muted2};background:${C.card2};border-radius:3px;padding:1px 4px">${h(ing.type)}</span>`:""}
-            ${ing.inci?`<span style="font-size:9px;color:${C.muted};font-style:italic">${h(ing.inci.slice(0,30))}</span>`:""}
-            ${expiryBadge(ing.expiry)}
-            ${ing.qty>0?`<span style="font-size:9px;color:${C.muted2}">${ing.qty}г</span>`:""}
-            ${ing.barcode?`<span style="font-size:9px;color:${C.accent}">🔗</span>`:""}
-          </div>
-        </div>
-        <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px">
-          <button onclick="event.stopPropagation();openEditIng('${h(ing.tradeName)}')" style="background:none;border:none;color:${C.muted2};font-size:13px;padding:2px 4px">✏️</button>
-          <button onclick="event.stopPropagation();saveMeta('${h(ing.tradeName)}',{spotId:''});render()" style="background:none;border:none;color:${C.muted};font-size:15px;padding:2px 4px">✕</button>
-        </div>
-      </div>`).join("");
-    return `<div class="level-card">
-      <div class="level-header" style="border-left:3px solid ${spot.color||'#C8A8E8'}" onclick="toggleExpand('spot_${spot.id}')">
-        <span style="width:14px;height:14px;border-radius:3px;background:${spot.color||'#C8A8E8'};display:inline-block;flex-shrink:0;margin-right:10px"></span>
-        <div style="flex:1;min-width:0">
-          <div class="level-title">${h(spot.name)}</div>
-          <div class="level-sub">${h(spot.type)} · ${ings.length} ингр.</div>
-        </div>
-        <div style="display:flex;gap:5px;align-items:center;flex-shrink:0;margin-left:8px">
-          <button class="btn-add" style="font-size:10px;padding:3px 7px" onclick="event.stopPropagation();openAssign('${spot.id}')">+ Ингредиент</button>
-          <button class="btn-icon" onclick="event.stopPropagation();openEdit('spot','${spot.id}')">✏️</button>
-          <button class="btn-icon" onclick="event.stopPropagation();deleteSpot('${spot.id}')">🗑</button>
-          <span style="color:${C.muted};font-size:11px">${isOpen?"▲":"▼"}</span>
-        </div>
-      </div>
-      ${isOpen?`<div class="level-children">${ings.length?ingsHtml:`<div style="font-size:11px;color:${C.muted};padding:2px 0 8px">Пусто</div>`}</div>`:""}
-    </div>`;
-  }).join("");
-}
-
-// ── STOCK ──────────────────────────────────────────────────────────────────
-function renderStock(){
-  const el=document.getElementById("tab-stock");
-  el.innerHTML=`
-    <div class="card" style="padding:14px;margin-bottom:12px">
-      <div class="sec-head">ВЫГРУЗКА ИЗ 1С</div>
-      <label style="display:block;background:${C.card2};border:1px dashed #323548;border-radius:8px;padding:12px;text-align:center;cursor:pointer;font-size:13px;color:${C.muted2}">
-        📁 Загрузить файл (CSV / TXT)
-        <input type="file" accept=".csv,.tsv,.txt" style="display:none" onchange="load1CFile(this)">
-      </label>
-      <button onclick="togglePaste('stock-paste')" style="margin-top:8px;width:100%;background:${C.card2};border:1px solid #323548;border-radius:8px;padding:9px 12px;color:${C.muted2};text-align:center">📋 Вставить текст (Название;Кол-во;Срок)</button>
-      <div id="stock-paste" style="display:none;margin-top:8px">
-        <textarea id="stock-paste-text" class="inp" style="height:90px;margin-bottom:8px" placeholder="Гиалуроновая кислота;500;2025-12-01&#10;Глицерин;1200"></textarea>
-        <div style="display:flex;gap:8px">
-          <button class="btn-primary" style="flex:1" onclick="loadStockText()">Загрузить</button>
-          <button class="btn-secondary" onclick="togglePaste('stock-paste')">✕</button>
-        </div>
-      </div>
-      ${S.stock.length?`<div style="font-size:12px;color:${C.accent};margin-top:8px">✓ ${S.stock.length} позиций</div>`:""}
-    </div>
-    <input id="stock-search" class="inp" placeholder="🔍 гиалур… или hyal…" oninput="renderStockList()" style="margin-bottom:10px">
-    <div id="stock-list"></div>`;
-  renderStockList();
-}
-function renderStockList(){
-  const q=(document.getElementById("stock-search")||{}).value||"";
-  const filtered=S.stock.filter(x=>fuzzy(q,x.tradeName)||(x.inci&&fuzzy(q,x.inci)));
-  const el=document.getElementById("stock-list");
-  if(!el) return;
-  if(!S.stock.length){el.innerHTML=`<div style="color:${C.muted};text-align:center;padding:30px 0;font-size:13px">Загрузите выгрузку из 1С</div>`;return;}
-  el.innerHTML=filtered.slice(0,25).map(ing=>`
-    <div class="card" style="padding:11px 14px;margin-bottom:8px">
-      <div style="font-weight:600;font-size:14px;margin-bottom:4px">${h(ing.tradeName)}</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-        ${ing.spotId?`<span style="font-size:11px;color:${C.accent}">📍 ${h(getSpotPath(ing.spotId))}</span>`:`<span style="font-size:11px;color:${C.muted}">Место не задано</span>`}
-        ${ing.barcode?`<span style="font-size:10px;color:${C.accentDim};background:${C.accentBg};border-radius:3px;padding:1px 5px">🔗</span>`:""}
-        ${expiryBadge(ing.expiry)}
-        ${ing.qty>0?`<span style="font-size:11px;color:${C.muted2}">${ing.qty}г</span>`:""}
-      </div>
-    </div>`).join("")+
-    (filtered.length>25?`<div style="color:${C.muted};text-align:center;font-size:12px;padding:8px">Уточните поиск · ${filtered.length} позиций</div>`:"");
-}
-
-// ── PICK ───────────────────────────────────────────────────────────────────
-function renderPick(){
-  const el=document.getElementById("tab-pick");
-  const sheetsHtml=S.techSheets.length>1?`
-    <div style="margin-bottom:10px">
-      <div style="font-size:10px;color:${C.muted};margin-bottom:6px">ВКЛАДКИ (${S.techSheets.length})</div>
-      <div style="display:flex;flex-wrap:wrap">${S.techSheets.map((s,i)=>`<button class="sheet-tab ${i===S.activeSheet?"active":""}" onclick="selectSheet(${i})">${h(s.name)} <span style="opacity:.6">(${s.items.length})</span></button>`).join("")}</div>
-    </div>`:"";
-
-  el.innerHTML=`
-    <div class="card" style="padding:14px;margin-bottom:12px">
-      <div class="sec-head">ТЕХ КАРТА</div>
-      <label id="xlsx-upload-label" style="display:block;background:${C.card2};border:1px dashed #323548;border-radius:8px;padding:12px;text-align:center;cursor:pointer;font-size:13px;color:${C.muted2};margin-bottom:8px">
-        📊 Загрузить Excel (.xlsx) с тех картами
-        <input type="file" accept=".xlsx,.xls" style="display:none" onchange="loadXlsx(this)">
-      </label>
-      ${sheetsHtml}
-      <button onclick="togglePaste('tech-paste')" style="width:100%;background:${C.card2};border:1px solid #323548;border-radius:8px;padding:9px 12px;color:${C.muted2};text-align:center">📋 Или вставить из Excel (Фаза · Торговое · INCI · %)</button>
-      <div id="tech-paste" style="display:none;margin-top:8px">
-        <textarea id="tech-paste-text" class="inp" style="height:110px;margin-bottom:8px" placeholder="A&#9;Вода&#9;Aqua&#9;Альянс&#9;18.98&#10;&#9;Глицерин&#9;Glycerin&#9;&#9;5.0"></textarea>
-        <div style="display:flex;gap:8px">
-          <button class="btn-primary" style="flex:1" onclick="loadTechText()">Загрузить</button>
-          <button class="btn-secondary" onclick="togglePaste('tech-paste')">✕</button>
-        </div>
-      </div>
-      ${S.techItems.length?`<div style="font-size:12px;color:${C.accent};margin-top:8px;display:flex;justify-content:space-between"><span>✓ ${h(S.productName||"Продукт")} · ${S.techItems.length} ингредиентов</span>${S.techSheets.length>1?`<span style="font-size:10px;color:${C.muted}">вкладка ${S.activeSheet+1}/${S.techSheets.length}</span>`:""}</div>`:""}
-    </div>
-    ${S.techItems.length?renderPickList():`<div style="text-align:center;color:${C.muted};padding:40px 16px;line-height:2">Загрузите тех карту<br><span style="font-size:12px">Скопируйте ячейки из Excel</span></div>`}`;
-  if(S.techItems.length) setTimeout(rerenderPickItems,0);
-}
-function renderPickList(){
-  const batchG=parseFloat(S.batchMass)||0;
-  const phases=[...new Set(S.techItems.map(i=>i.phase))].sort();
-  let html=`<div style="margin-bottom:12px">
-    <label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">Масса партии (г / мл)</label>
-    <input id="batch-mass-inp" class="inp" type="number" value="${h(S.batchMass)}" placeholder="15000"
-      oninput="S.batchMass=this.value"
-      onchange="rerenderPickItems()">
-  </div><div id="pick-items"></div>`;
-  return html;
-}
-
-function goToIngredient(tradeName){
-  // Switch to warehouse tab and highlight the ingredient
-  switchTab("warehouse");
-  S.highlightIng=tradeName;
-  // Expand all levels that contain this ingredient
-  const m=S.meta.find(x=>x.tradeName===tradeName||fuzzy(x.tradeName,tradeName)||fuzzy(tradeName,x.tradeName));
-  if(m&&m.spotId){
-    const spot=S.spots.find(s=>s.id===m.spotId);
-    if(spot){
-      const shelf=S.shelves.find(s=>s.id===spot.shelfId);
-      if(shelf){
-        const rack=S.racks.find(r=>r.id===shelf.rackId);
-        if(rack){
-          expanded["room_"+rack.roomId]=true;
-          expanded["rack_"+rack.id]=true;
-          expanded["shelf_"+shelf.id]=true;
-          expanded["spot_"+spot.id]=true;
-        }
-      }
-    }
-  }
-  render();
-  // Scroll to highlighted ingredient
-  setTimeout(()=>{
-    const el=document.getElementById("ing_"+CSS.escape(tradeName));
-    if(el) el.scrollIntoView({behavior:"smooth",block:"center"});
-  },150);
-}
-
-function rerenderPickItems(){
-  const el=document.getElementById("pick-items");
-  if(!el) return;
-  const batchG=parseFloat(S.batchMass)||0;
-  const phases=[...new Set(S.techItems.map(i=>i.phase))].sort();
-  let html="";
-  for(const ph of phases){
-    const phCol=C_ph(ph);
-    const items=S.techItems.filter(i=>i.phase===ph);
-    html+=`<div class="card" style="margin-bottom:10px">
-      <div class="phase-head" style="background:${phCol}15">
-        <div class="phase-dot" style="background:${phCol}"></div>
-        <span style="font-size:11px;font-weight:700;color:${C.muted2};letter-spacing:1px">ФАЗА ${ph}</span>
-      </div>
-      ${items.map((item,idx)=>{
-        const s=S.stock.find(x=>fuzzy(x.tradeName,item.trade)||fuzzy(item.trade,x.tradeName))
-               ||S.meta.find(x=>fuzzy(x.tradeName,item.trade)||fuzzy(item.trade,x.tradeName));
-        const path=s?.spotId?getSpotPath(s.spotId):"";
-        const grams=batchG?((item.pct/100)*batchG):0;
-        const gramsStr=grams?grams.toFixed(1):"";
-        const inStock=s?parseFloat(s.qty)||0:0;
-        const enough=inStock>=grams&&grams>0;
-        const stockColor=grams>0?(enough?C.accent:C.danger):C.muted2;
-        const inStockColor=inStock>0?(grams>0?stockColor:C.muted2):C.muted;
-        return `<div style="padding:11px 14px;${idx<items.length-1?"border-bottom:1px solid "+C.border:""};cursor:pointer;transition:background .15s"
-          onclick="goToIngredient('${h(item.trade)}')"
-          onmouseenter="this.style.background='#ffffff08'" onmouseleave="this.style.background=''">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div style="flex:1;min-width:0">
-              <div style="font-weight:600;font-size:14px">${h(item.trade)}</div>
-              ${item.inci?`<div style="font-size:11px;color:${C.muted};margin-top:1px">${h(item.inci)}</div>`:""}
-              <div style="margin-top:6px">
-                ${path
-                  ?`<div style="font-size:13px;font-weight:700;color:${C.accent};background:${C.accentBg};border-radius:6px;padding:3px 8px;display:inline-flex;align-items:center;gap:4px;margin-bottom:4px">📍 ${h(path)}</div>`
-                  :`<div style="font-size:12px;color:${C.warn};margin-bottom:4px">⚠️ Место не задано</div>`}
-                <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
-                  ${s?expiryBadge(s.expiry):""}
-                </div>
-              </div>
-            </div>
-            <div style="text-align:right;margin-left:10px;flex-shrink:0">
-              <div style="font-size:12px;color:${C.muted}">${item.pct}%</div>
-              ${gramsStr
-                ?`<div style="font-size:15px;color:${C.accent};font-weight:800">${gramsStr}г</div>`
-                :""}
-              ${inStock>0
-                ?`<div style="margin-top:4px;text-align:right">
-                    <span style="font-size:10px;color:${C.muted2};letter-spacing:.5px">наличие</span><br>
-                    <span style="font-size:${grams>0?"22":"16"}px;font-weight:800;color:${inStockColor};line-height:1.1">${inStock}г</span>
-                  </div>`
-                :""}
-            </div>
-          </div>
-        </div>`;
-      }).join("")}
-    </div>`;
-  }
-  el.innerHTML=html;
-}
-
-// ── SCAN ───────────────────────────────────────────────────────────────────
-function renderScan(){
-  const el=document.getElementById("tab-scan");
-  let resultHtml="";
-  const ss=S.scanStatus;
-  if(ss&&ss.type==="found"){
-    const ing=ss.ing;
-    if(ing){
-      const path=ing.spotId?getSpotPath(ing.spotId):"";
-      const inTech=S.techItems.find(t=>fuzzy(t.trade,ing.tradeName)||fuzzy(ing.tradeName,t.trade));
-      const batchG=parseFloat(S.batchMass)||0;
-      resultHtml=`<div class="card" style="border-color:${C.accent};padding:16px;margin-bottom:12px">
-        <div style="font-weight:700;font-size:15px;margin-bottom:4px">${h(ing.tradeName)}</div>
-        ${ing.inci?`<div style="font-size:12px;color:${C.muted};margin-bottom:6px">${h(ing.inci)}</div>`:""}
-        ${path?`<div style="font-size:13px;font-weight:700;color:${C.accent};background:${C.accentBg};border-radius:6px;padding:4px 10px;display:inline-block;margin-bottom:8px">📍 ${h(path)}</div>`:""}
-        <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">${expiryBadge(ing.expiry)}${ing.qty>0?`<span style="font-size:11px;color:${C.muted2}">${ing.qty}г</span>`:""}</div>
-        ${S.techItems.length?(inTech?
-          `<div style="background:${C.accentBg};border:1px solid ${C.accentDim};border-radius:10px;padding:14px">
-            <div style="font-size:20px;font-weight:800;color:${C.accent}">✅ НУЖЕН</div>
-            <div style="font-size:12px;color:${C.muted2};margin-top:4px">Фаза ${inTech.phase} · ${inTech.pct}%${batchG?" · "+((inTech.pct/100)*batchG).toFixed(1)+"г":""}</div>
-          </div>`:
-          `<div style="background:${C.dangerBg};border:1px solid ${C.danger}44;border-radius:10px;padding:14px">
-            <div style="font-size:20px;font-weight:800;color:${C.danger}">❌ НЕ НУЖЕН</div>
-            <div style="font-size:12px;color:${C.muted2};margin-top:4px">Не в текущей тех карте</div>
-          </div>`):`<div style="font-size:12px;color:${C.warn}">Загрузите тех карту для проверки</div>`}
-        <button onclick="S.scanStatus=null;startLiveScanner()" style="width:100%;margin-top:12px;background:${C.card2};border:1px solid ${C.border};color:${C.text};border-radius:8px;padding:10px;cursor:pointer;font-size:13px">📷 Сканировать ещё</button>
-      </div>`;
-    } else {
-      resultHtml=`<div class="card" style="border-color:${C.danger};padding:16px;margin-bottom:12px">
-        <div style="font-weight:700;color:${C.danger};margin-bottom:4px">❓ Штрих-код не найден</div>
-        <div style="font-size:12px;color:${C.muted};margin-bottom:10px;font-family:monospace">${h(ss.barcode)}</div>
-        <button onclick="S.scanMode='link';S.linkBarcode='${h(ss.barcode)}';S.scanStatus={type:'link',barcode:'${h(ss.barcode)}'};renderScan()" style="width:100%;background:${C.card2};border:1px solid ${C.border};color:${C.text};border-radius:8px;padding:10px;cursor:pointer;font-size:13px">🔗 Привязать к ингредиенту</button>
-      </div>`;
-    }
-  } else if(ss&&(ss.type==="link"||(S.scanMode==="link"&&S.linkBarcode))){
-    const bc=S.linkBarcode||ss.barcode;
-    resultHtml=`<div class="card" style="padding:16px;margin-bottom:12px">
-      <div style="font-size:11px;color:${C.muted};margin-bottom:4px">Штрих-код:</div>
-      <div style="font-family:monospace;font-size:13px;color:${C.accent};margin-bottom:12px;word-break:break-all">${h(bc)}</div>
-      <input id="link-search" class="inp" placeholder="Поиск: гиалур…" oninput="renderLinkResults()" style="margin-bottom:8px">
-      <div id="link-results" style="max-height:200px;overflow-y:auto;margin-bottom:10px"></div>
-      <button id="link-confirm" class="btn-primary" style="width:100%;display:none" onclick="confirmLink('${h(bc)}')">✓ Привязать</button>
-    </div>`;
-  } else if(ss&&ss.type==="linked"){
-    resultHtml=`<div style="background:${C.accentBg};border:1px solid ${C.accentDim};border-radius:12px;padding:16px;text-align:center;margin-bottom:12px">
-      <div style="font-size:18px;font-weight:800;color:${C.accent}">✅ Привязано</div>
-      <div style="font-size:13px;color:${C.muted2};margin-top:4px">${h(ss.name)}</div>
-    </div>`;
-  } else if(ss&&ss.type==="notfound"){
-    resultHtml=`<div style="background:${C.dangerBg};border:1px solid ${C.danger}44;border-radius:12px;padding:14px;margin-bottom:12px">
-      <div style="font-weight:700;color:${C.danger};margin-bottom:4px">Не распознан</div>
-      <div style="font-size:12px;color:${C.muted}">${h(ss.msg||"")}</div>
-    </div>`;
-  }
-
-  el.innerHTML=`
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      ${[["find","🔍 Найти"],["link","🔗 Привязать"]].map(([m,label])=>
-        `<button class="mode-tab ${S.scanMode===m?"active":""}" onclick="S.scanMode='${m}';S.scanStatus=null;S.linkBarcode=null;stopLiveScanner();renderScan()">${label}</button>`
-      ).join("")}
-    </div>
-
-    <!-- Live camera -->
-    <div class="card" style="margin-bottom:12px;overflow:hidden">
-      <div id="live-cam-wrap" style="position:relative;background:#000;min-height:200px">
-        <video id="live-video" style="width:100%;max-height:260px;object-fit:cover;display:block" playsinline muted></video>
-        <!-- Aiming frame -->
-        <div id="scan-aim" style="display:none;position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center">
-          <div style="width:220px;height:100px;border:2px solid ${C.accent};border-radius:8px;box-shadow:0 0 0 9999px rgba(0,0,0,0.45)"></div>
-        </div>
-        <div id="scan-status-bar" style="display:none;position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:6px 12px;text-align:center"></div>
-      </div>
-      <div style="padding:12px;display:flex;gap:8px">
-        <button id="btn-start-scan" onclick="startLiveScanner()" class="btn-primary" style="flex:1">📷 Включить камеру</button>
-        <button id="btn-stop-scan" onclick="stopLiveScanner()" class="btn-secondary" style="display:none;flex:1">⏹ Стоп</button>
-      </div>
-    </div>
-
-    <!-- Manual barcode input -->
-    <div class="card" style="padding:14px;margin-bottom:12px">
-      <div style="font-size:11px;color:${C.muted};margin-bottom:8px;font-weight:700;letter-spacing:.5px">ВВЕСТИ ВРУЧНУЮ</div>
-      <div style="display:flex;gap:8px">
-        <input id="manual-barcode-inp" class="inp" type="number" inputmode="numeric"
-          placeholder="Цифры со штрих-кода"
-          style="flex:1;font-size:16px"
-          onkeydown="if(event.key==='Enter'){applyManualBarcode();event.preventDefault()}">
-        <button onclick="applyManualBarcode()" style="background:${C.accentBg};border:1px solid ${C.accentDim};color:${C.accent};border-radius:8px;padding:9px 14px;font-weight:700;font-size:13px">Найти</button>
-      </div>
-      ${!S.techItems.length&&S.scanMode==="find"?`<div style="font-size:11px;color:${C.warn};margin-top:8px">⚠️ Загрузите тех карту для проверки ✅/❌</div>`:""}
-    </div>
-
-    ${resultHtml}
-  `;
-
-  if(ss&&(ss.type==="link"||(S.scanMode==="link"&&S.linkBarcode))){renderLinkResults();}
-}
-
-
-// ── LIVE CAMERA SCANNER ────────────────────────────────────────────────────
-let _liveScanStream = null;
-let _liveScanTimer = null;
-let _liveScanActive = false;
-
-function startLiveScanner(){
-  const video = document.getElementById("live-video");
-  const aimDiv = document.getElementById("scan-aim");
-  const statusBar = document.getElementById("scan-status-bar");
-  const btnStart = document.getElementById("btn-start-scan");
-  const btnStop = document.getElementById("btn-stop-scan");
-  if(!video) return;
-
-  S.scanStatus = null;
-
-  navigator.mediaDevices.getUserMedia({
-    video: { facingMode: "environment", width:{ideal:1280}, height:{ideal:720} }
-  }).then(stream => {
-    _liveScanStream = stream;
-    _liveScanActive = true;
-    video.srcObject = stream;
-    video.play();
-    if(aimDiv) aimDiv.style.display = "flex";
-    if(statusBar){ statusBar.style.display="block"; statusBar.textContent="🔍 Наведите камеру на штрих-код…"; }
-    if(btnStart) btnStart.style.display = "none";
-    if(btnStop) btnStop.style.display = "flex";
-
-    // Scan every 400ms
-    _liveScanTimer = setInterval(() => {
-      if(!_liveScanActive || video.readyState < 2) return;
-      const cv = document.createElement("canvas");
-      cv.width = video.videoWidth;
-      cv.height = video.videoHeight;
-      const ctx = cv.getContext("2d");
-      ctx.drawImage(video, 0, 0);
-      const imgData = ctx.getImageData(0, 0, cv.width, cv.height);
-
-      // Try jsQR
-      if(window.jsQR){
-        const qr = window.jsQR(imgData.data, imgData.width, imgData.height, {inversionAttempts:"dontInvert"});
-        if(qr){ onLiveScanResult(qr.data); return; }
-      }
-
-      // Try ZXing
-      if(window.ZXing){
-        try{
-          const hints = new Map();
-          hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[
-            ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8,
-            ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39,
-            ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E,
-            ZXing.BarcodeFormat.QR_CODE,
-          ]);
-          hints.set(ZXing.DecodeHintType.TRY_HARDER, false); // false = faster for live
-          const reader = new ZXing.MultiFormatReader();
-          reader.setHints(hints);
-          const ls = new ZXing.HTMLCanvasElementLuminanceSource(cv);
-          const result = reader.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));
-          if(result){ onLiveScanResult(result.getText()); return; }
-        } catch(e){ /* not found, keep scanning */ }
-      }
-    }, 400);
-
-  }).catch(err => {
-    const statusBar = document.getElementById("scan-status-bar");
-    if(statusBar){
-      statusBar.style.display = "block";
-      statusBar.style.color = "#E07070";
-      statusBar.textContent = "Камера недоступна: " + (err.message||err);
-    }
-    console.warn("Camera error:", err);
-  });
-}
-
-function stopLiveScanner(){
-  _liveScanActive = false;
-  clearInterval(_liveScanTimer);
-  if(_liveScanStream){
-    _liveScanStream.getTracks().forEach(t => t.stop());
-    _liveScanStream = null;
-  }
-  const video = document.getElementById("live-video");
-  if(video){ video.srcObject = null; }
-  const btnStart = document.getElementById("btn-start-scan");
-  const btnStop = document.getElementById("btn-stop-scan");
-  const aimDiv = document.getElementById("scan-aim");
-  const statusBar = document.getElementById("scan-status-bar");
-  if(btnStart) btnStart.style.display = "flex";
-  if(btnStop) btnStop.style.display = "none";
-  if(aimDiv) aimDiv.style.display = "none";
-  if(statusBar) statusBar.style.display = "none";
-}
-
-function onLiveScanResult(bc){
-  // Flash green on aim frame
-  const aimDiv = document.getElementById("scan-aim");
-  const statusBar = document.getElementById("scan-status-bar");
-  if(aimDiv){
-    const box = aimDiv.querySelector("div");
-    if(box){ box.style.borderColor = "#6EC6A0"; box.style.boxShadow = "0 0 0 9999px rgba(0,0,0,0.3)"; }
-  }
-  if(statusBar){ statusBar.style.background = "rgba(110,198,160,.85)"; statusBar.style.color = "#0D0F14"; statusBar.textContent = "✓ " + bc; }
-
-  stopLiveScanner();
-
-  // Short delay so user sees the flash
-  setTimeout(() => {
-    applyScanResult(bc);
-  }, 300);
-}
-
-// Stop scanner when switching tabs
-const _origSwitchTab = switchTab;
-switchTab = function(tab){
-  if(tab !== "scan") stopLiveScanner();
-  _origSwitchTab(tab);
-};
-
-// ── SCAN photo handler ─────────────────────────────────────────────────────
-function handleScanPhoto(input){
-  const file = input.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    decodeBarcode(ev.target.result,
-      bc => applyScanResult(bc),
-      () => { S.scanStatus={type:"notfound",msg:"Не распознан. Попробуйте при хорошем освещении, ровно и штрих-код крупно."}; renderScan(); }
-    );
-  };
-  reader.readAsDataURL(file);
-  input.value = "";
-}
-
-function applyManualBarcode(){
-  const inp = document.getElementById("manual-barcode-inp");
-  const bc = inp?.value?.trim();
-  if(!bc){ inp?.focus(); return; }
-  applyScanResult(bc);
-  if(inp) inp.value="";
-}
-
-function applyScanResult(bc){
-  if(S.scanMode==="find"){S.scanStatus={type:"found",barcode:bc,ing:findIngByBarcode(bc)};}
-  else{S.linkBarcode=bc;S.scanStatus={type:"link",barcode:bc};}
-  renderScan();
-}
-
-// ── Load xlsx ──────────────────────────────────────────────────────────────
-function loadXlsx(input){
-  const file=input.files[0];if(!file) return;
-  const lbl=document.getElementById("xlsx-upload-label");
-  if(lbl) lbl.innerHTML="⏳ Загрузка...";
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    try{
-      if(!window.XLSX){alert("SheetJS ещё загружается, попробуйте ещё раз");renderPick();return;}
-      const wb=window.XLSX.read(ev.target.result,{type:"array"});
-      const sheets=[];
-      for(const name of wb.SheetNames){
-        const ws=wb.Sheets[name];
-        const rows=window.XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
-        const multi=parseSvodnыSheet(rows);
-        if(multi.length>1){multi.forEach(p=>sheets.push({name:p.name||name,items:p.items}));}
-        else{const items=parseTechRows(rows);if(items.length>0) sheets.push({name,items});}
-      }
-      if(!sheets.length){alert("Не найдено ни одной тех карты");renderPick();return;}
-      S.techSheets=sheets;S.activeSheet=0;
-      S.techItems=sheets[0].items;S.productName=sheets[0].name;
-    }catch(e){alert("Ошибка: "+e.message);}
-    renderPick();
-  };
-  reader.readAsArrayBuffer(file);
-  input.value="";
-}
-function selectSheet(idx){
-  S.activeSheet=idx;S.techItems=S.techSheets[idx].items;S.productName=S.techSheets[idx].name;renderPick();
-}
-function load1CFile(input){
-  const file=input.files[0];if(!file) return;
-  const r=new FileReader();r.onload=ev=>{S.stock=mergeStock(parse1C(ev.target.result));renderStock();};r.readAsText(file,"utf-8");input.value="";
-}
-function loadStockText(){
-  const t=(document.getElementById("stock-paste-text")||{}).value||"";
-  S.stock=mergeStock(parse1C(t));renderStock();
-}
-function loadTechText(){
-  const t=(document.getElementById("tech-paste-text")||{}).value||"";
-  S.techItems=parseTechText(t);S.productName="";S.techSheets=[];renderPick();
-}
-
-// ── Paste toggle ───────────────────────────────────────────────────────────
-function togglePaste(id){const el=document.getElementById(id);if(el) el.style.display=el.style.display==="none"?"block":"none";}
-
-// ── EDIT INGREDIENT ──────────────────────────────────────────────────────────
-function openEditIng(tradeName){
-  const m=S.meta.find(x=>x.tradeName===tradeName)||{tradeName};
-  S.modal="editIng";
-  S.editIngName=tradeName;
-  S.editIngForm={
-    tradeName:m.tradeName||"",
-    inci:m.inci||"",
-    expiry:m.expiry||"",
-    qty:m.qty||"",
-    type:m.type||"",
-    barcode:m.barcode||""
-  };
-  renderModal();
-  document.getElementById("modal-overlay").classList.remove("hidden");
-}
-function saveEditIng(){
-  const f=S.editIngForm;
-  const newName=f.tradeName.trim();
-  if(!newName) return;
-  // If name changed — update tradeName in meta
-  if(newName!==S.editIngName){
-    const idx=S.meta.findIndex(x=>x.tradeName===S.editIngName);
-    if(idx>=0) S.meta[idx]={...S.meta[idx],tradeName:newName};
-  }
-  saveMeta(newName,{
-    inci:f.inci,
-    expiry:f.expiry,
-    qty:parseFloat(f.qty)||0,
-    type:f.type,
-    barcode:f.barcode
-  });
-  closeModal();render();
-}
-
-// ── MODAL ──────────────────────────────────────────────────────────────────
-const MODAL_TITLES={room:["🏭 Новое помещение","✏️ Редактировать помещение"],rack:["🗄 Новый стеллаж","✏️ Редактировать стеллаж"],shelf:["📋 Новая полка","✏️ Редактировать полку"],spot:["📦 Новое место","✏️ Редактировать место"]};
-
-function openModal(type,parentId){
-  S.modal=type;S.editId=null;S.modalParentId=parentId||null;
-  S.modalForm={name:"",color:"",type:""};
-  renderModal();document.getElementById("modal-overlay").classList.remove("hidden");
-}
-function openEdit(type,id){
-  S.modal=type;S.editId=id;
-  let item;
-  if(type==="room") item=S.rooms.find(x=>x.id===id);
-  else if(type==="rack") item=S.racks.find(x=>x.id===id);
-  else if(type==="shelf") item=S.shelves.find(x=>x.id===id);
-  else if(type==="spot") item=S.spots.find(x=>x.id===id);
-  S.modalForm={name:item?.name||"",color:item?.color||"",type:item?.type||"",spotType:item?.type||""};
-  renderModal();document.getElementById("modal-overlay").classList.remove("hidden");
-}
-function openAssign(spotId){
-  S.modal="assign";S.assignSpotId=spotId;S.assignMode=S.stock.length?"search":"manual";
-  S.assignSearch="";S.manualForm={name:"",inci:"",expiry:"",qty:"",type:""};S.scanDone=null;
-  renderModal();document.getElementById("modal-overlay").classList.remove("hidden");
-}
-function closeModal(){document.getElementById("modal-overlay").classList.add("hidden");S.modal=null;}
-function closeModalIfOverlay(e){if(e.target===document.getElementById("modal-overlay")) closeModal();}
-
-function renderModal(){
-  const box=document.getElementById("modal-box");
-  const t=S.modal;
-  if(t==="assign"){box.innerHTML=renderAssignModal();return;}
-  if(t==="editIng"){box.innerHTML=renderEditIngModal();return;}
-  if(t==="deleteConfirm"){
-    box.innerHTML=`<div style="font-size:18px;margin-bottom:12px">🗑 Удалить?</div>
-      <div style="font-size:14px;color:${C.muted2};margin-bottom:20px;line-height:1.6">${h(S.deleteConfirmMsg||"")}</div>
-      <div style="display:flex;gap:8px">
-        <button class="btn-danger" style="flex:1;font-size:15px" onclick="S.deleteConfirmFn&&S.deleteConfirmFn()">Удалить</button>
-        <button class="btn-secondary" style="flex:1" onclick="closeModal()">Отмена</button>
-      </div>`;
-    return;
-  }
-  const isEdit=!!S.editId;
-  const title=MODAL_TITLES[t]?.[isEdit?1:0]||"";
-  const f=S.modalForm;
-  const colors=(t==="room"||t==="rack"||t==="shelf"||t==="spot")?C.palette:[];
-  let html=`<div style="font-weight:700;font-size:17px;margin-bottom:16px">${title}</div>
-    <label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">Название *</label>
-    <input id="mf-name" class="inp" style="margin-bottom:12px" value="${h(f.name)}" placeholder="${t==="room"?"Производственный цех":t==="rack"?"Стеллаж 1":t==="shelf"?"Полка верхняя":"Место А1"}" onkeydown="if(event.key==='Enter')saveModal()">`;
-  if(colors.length){
-    html+=`<label style="font-size:11px;color:${C.muted};display:block;margin-bottom:8px">Цвет</label><div style="display:flex;flex-wrap:wrap;margin-bottom:16px">`;
-    colors.forEach(col=>html+=`<span class="swatch ${f.color===col?"active":""}" style="background:${col}" onclick="setModalColor('${col}')"></span>`);
-    html+="</div>";
-  }
-  if(t==="spot"){
-    html+=`<label style="font-size:11px;color:${C.muted};display:block;margin-bottom:6px">Тип хранения</label><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">`;
-    C.TYPES.forEach(tp=>html+=`<button class="type-pill ${f.type===tp?"active":""}" onclick="setModalType('${tp}')">${tp}</button>`);
-    html+="</div>";
-  }
-  html+=`<div style="display:flex;gap:8px">
-    <button class="btn-primary" style="flex:1" onclick="saveModal()">${isEdit?"Сохранить":"Добавить"}</button>
-    <button class="btn-secondary" onclick="closeModal()">Отмена</button>
-  </div>`;
-  box.innerHTML=html;
-  setTimeout(()=>document.getElementById("mf-name")?.focus(),100);
-}
-function setModalColor(col){S.modalForm.color=col;renderModal();}
-function setModalType(tp){S.modalForm.type=tp;renderModal();}
-
-function saveModal(){
-  const name=(document.getElementById("mf-name")||{}).value?.trim();if(!name) return;
-  const t=S.modal;const f={...S.modalForm,name};
-  if(S.editId){
-    const eid=S.editId;
-    if(t==="room") S.rooms=S.rooms.map(x=>x.id===eid?{...x,name,color:f.color||x.color}:x);
-    else if(t==="rack") S.racks=S.racks.map(x=>x.id===eid?{...x,name,color:f.color||x.color}:x);
-    else if(t==="shelf") S.shelves=S.shelves.map(x=>x.id===eid?{...x,name,color:f.color||x.color||"#7BAEE8"}:x);
-    else if(t==="spot") S.spots=S.spots.map(x=>x.id===eid?{...x,name,type:f.type||x.type,color:f.color||x.color||"#C8A8E8"}:x);
-  } else {
-    const id=t+"_"+uid();
-    if(t==="room") S.rooms.push({id,name,color:f.color||C.roomColors[S.rooms.length%C.roomColors.length]});
-    else if(t==="rack") S.racks.push({id,roomId:S.modalParentId,name,color:f.color||C.rackColors[S.racks.length%C.rackColors.length]});
-    else if(t==="shelf") S.shelves.push({id,rackId:S.modalParentId,name,color:f.color||"#7BAEE8"});
-    else if(t==="spot") S.spots.push({id,shelfId:S.modalParentId,name,type:f.type||"Прочее",color:f.color||"#C8A8E8"});
-  }
-  save();closeModal();render();
-}
-
-// ── Scan barcode directly into edit-ing modal ─────────────────────────────────
-
-function decodeBarcode(dataUrl, onSuccess, onFail){
-  const img = new Image();
-  img.onload = () => {
-    // Try multiple crops/rotations to improve detection
-    const attempts = [
-      {rotate:0, scale:1},
-      {rotate:90, scale:1},
-      {rotate:0, scale:2},   // enlarge small barcodes
-      {rotate:270, scale:1},
-      {rotate:0, scale:1.5},
-    ];
-    let tried = 0;
-    function tryNext(){
-      if(tried >= attempts.length){ onFail(); return; }
-      const {rotate, scale} = attempts[tried++];
-      const cv = document.createElement("canvas");
-      const rad = rotate * Math.PI / 180;
-      const sw = img.width * scale, sh = img.height * scale;
-      if(rotate===90||rotate===270){ cv.width=sh; cv.height=sw; }
-      else { cv.width=sw; cv.height=sh; }
-      const ctx = cv.getContext("2d");
-      ctx.save();
-      ctx.translate(cv.width/2, cv.height/2);
-      ctx.rotate(rad);
-      ctx.scale(scale, scale);
-      ctx.drawImage(img, -img.width/2, -img.height/2);
-      ctx.restore();
-      const imgData = ctx.getImageData(0,0,cv.width,cv.height);
-      // jsQR
-      if(window.jsQR){
-        const qr = window.jsQR(imgData.data,imgData.width,imgData.height,{inversionAttempts:"attemptBoth"});
-        if(qr){ onSuccess(qr.data); return; }
-      }
-      // ZXing
-      if(window.ZXing){
-        try{
-          const hints = new Map();
-          hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[
-            ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8,
-            ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39,
-            ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E,
-            ZXing.BarcodeFormat.QR_CODE,
-          ]);
-          hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-          const reader = new ZXing.MultiFormatReader();
-          reader.setHints(hints);
-          const ls = new ZXing.HTMLCanvasElementLuminanceSource(cv);
-          const result = reader.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));
-          if(result){ onSuccess(result.getText()); return; }
-        } catch(e){ tryNext(); return; }
-      }
-      tryNext();
-    }
-    tryNext();
-  };
-  img.onerror = onFail;
-  img.src = dataUrl;
-}
-
-function scanBarcodeForEditIng(input){
-  const file = input.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    decodeBarcode(ev.target.result,
-      bc => applyBarcode(bc),
-      () => showScanError("Не распознан. Попробуйте: яркий свет, ровно, штрих-код крупно в кадре.")
-    );
-  };
-  reader.readAsDataURL(file);
-  input.value = "";
-}
-
-function applyBarcode(bc){
-  S.editIngForm.barcode=bc;
-  const inp=document.getElementById("edit-barcode-inp");
-  if(inp){
-    inp.value=bc;
-    inp.style.borderColor="#6EC6A0";
-    inp.style.color="#6EC6A0";
-  }
-  const lbl=inp?.parentElement?.querySelector("label");
-  if(lbl){
-    lbl.style.background="#6EC6A015";
-    lbl.style.borderColor="#6EC6A0";
-    lbl.innerHTML='✅<input type="file" accept="image/*" capture="environment" style="display:none" onchange="scanBarcodeForEditIng(this)">';
-    setTimeout(()=>{
-      lbl.style.background="";lbl.style.borderColor="";
-      lbl.innerHTML='📷<input type="file" accept="image/*" capture="environment" style="display:none" onchange="scanBarcodeForEditIng(this)">';
-    },2500);
-  }
-  // Auto-save immediately
-  if(S.editIngName) saveMeta(S.editIngName,{barcode:bc});
-  // Hide error if shown
-  const err=document.getElementById("scan-error-msg");
-  if(err) err.style.display="none";
-}
-function showScanError(msg){
-  const el=document.getElementById("scan-error-msg");
-  if(el){el.textContent=msg;el.style.display="block";}
-  else {
-    const inp=document.getElementById("edit-barcode-inp");
-    if(inp){inp.placeholder=msg;inp.style.borderColor="#E07070";}
-  }
-}
-
-// ── EDIT INGREDIENT modal ─────────────────────────────────────────────────────
-function renderEditIngModal(){
-  const f=S.editIngForm;
-  const TYPES=["Порошок","Жидкость","Канистра","Гель","Масло","Воск","Прочее"];
-  return `<div style="font-weight:700;font-size:17px;margin-bottom:16px">✏️ Редактировать ингредиент</div>
-    <label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">Название</label>
-    <input class="inp" value="${h(f.tradeName)}" oninput="S.editIngForm.tradeName=this.value" style="margin-bottom:8px">
-    <label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">INCI</label>
-    <input class="inp" value="${h(f.inci)}" placeholder="Sodium Hyaluronate" oninput="S.editIngForm.inci=this.value" style="margin-bottom:8px">
-    <label style="font-size:11px;color:${C.muted};display:block;margin-bottom:6px">Тип</label>
-    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
-      ${TYPES.map(tp=>`<button class="type-pill ${f.type===tp?"active":""}" onclick="S.editIngForm.type='${tp}';renderModal()">${tp}</button>`).join("")}
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:10px">
-      <div style="flex:1"><label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">Срок годности</label>
-      <input class="inp" type="date" value="${h(f.expiry)}" oninput="S.editIngForm.expiry=this.value"></div>
-      <div style="flex:1"><label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">Остаток (г)</label>
-      <input class="inp" type="number" value="${h(f.qty)}" placeholder="500" oninput="S.editIngForm.qty=this.value"></div>
-    </div>
-    <label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">Штрих-код</label>
-    <div id="scan-error-msg" style="display:none;font-size:11px;color:#E07070;margin-bottom:6px;padding:6px 10px;background:#E0707012;border-radius:6px"></div>
-    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-      <input id="edit-barcode-inp" class="inp" value="${h(f.barcode)}"
-        placeholder="Введите цифры или сканируйте"
-        oninput="S.editIngForm.barcode=this.value"
-        type="number"
-        inputmode="numeric"
-        style="flex:1;font-size:16px;letter-spacing:1px">
-      <label style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:10px;background:${C.accentBg};border:1px solid ${C.accentDim};cursor:pointer;flex-shrink:0;font-size:20px" title="Сканировать фото">
-        📷
-        <input type="file" accept="image/*" capture="environment" style="display:none" onchange="scanBarcodeForEditIng(this)">
-      </label>
-    </div>
-    <div style="font-size:11px;color:${C.muted};margin-bottom:14px;line-height:1.6">
-      Введите цифры под штрих-кодом вручную — это быстрее.<br>
-      Или сфотографируйте: яркий свет, штрих-код горизонтально, вплотную.
-    </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn-primary" style="flex:1" onclick="saveEditIng()">Сохранить</button>
-      <button class="btn-secondary" onclick="closeModal()">Отмена</button>
-    </div>`;
-}
-
-// ── ASSIGN modal ───────────────────────────────────────────────────────────
-function renderAssignModal(){
-  const tabs=S.stock.length?[["search","🔍 Из 1С"],["scan","📷 Сканер"],["manual","✏️ Вручную"]]:[["manual","✏️ Вручную"],["scan","📷 Сканер"]];
-  const path=getSpotPath(S.assignSpotId)||"—";
-  const mf=S.manualForm;
-  let content="";
-  if(S.assignMode==="search"){
-    const results=S.stock.filter(x=>S.assignSearch&&(fuzzy(S.assignSearch,x.tradeName)||(x.inci&&fuzzy(S.assignSearch,x.inci)))).slice(0,15);
-    content=`<input id="assign-search" class="inp" placeholder="гиалур… или hyal…" value="${h(S.assignSearch)}" oninput="S.assignSearch=this.value;updateAssignResults()" style="margin-bottom:8px">
-      <div id="assign-results" style="max-height:300px;overflow-y:auto">
-        ${!S.assignSearch?`<div style="color:${C.muted};font-size:12px;padding:12px 0;text-align:center">Начните вводить название</div>`:""}
-        ${S.assignSearch&&!results.length?`<div style="color:${C.muted};font-size:12px;padding:12px 0;text-align:center">Не найдено — <span style="color:${C.accent};cursor:pointer" onclick="S.assignMode='manual';S.manualForm.name=S.assignSearch;renderModal()">добавить вручную</span></div>`:""}
-        ${results.map(x=>`<div class="search-row" onclick="doAssign('${h(x.tradeName)}')">
-          <div><div style="font-weight:600;font-size:13px">${h(x.tradeName)}</div>
-          <div style="display:flex;gap:4px;margin-top:2px">${x.spotId?`<span style="font-size:10px;color:${C.warn}">привязан</span>`:""}${expiryBadge(x.expiry)}${x.qty>0?`<span style="font-size:10px;color:${C.muted}">${x.qty}г</span>`:""}</div></div>
-          <span style="color:${C.accent};font-size:22px">+</span>
-        </div>`).join("")}
-      </div>`;
-  } else if(S.assignMode==="manual"){
-    content=`
-      ${S.scanDone?.notFound?`<div style="background:#E8A87C15;border:1px solid ${C.warn}44;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:${C.warn}">Штрих-код будет привязан: <span style="font-family:monospace">${h((S.scanDone.barcode||"").slice(-8))}</span></div>`:""}
-      <label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">Название *</label>
-      <input id="mf-ing-name" class="inp" value="${h(mf.name)}" placeholder="Гиалуроновая кислота LMW" oninput="S.manualForm.name=this.value" style="margin-bottom:8px">
-      <label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">INCI</label>
-      <input class="inp" value="${h(mf.inci)}" placeholder="Sodium Hyaluronate" oninput="S.manualForm.inci=this.value" style="margin-bottom:8px">
-      <label style="font-size:11px;color:${C.muted};display:block;margin-bottom:6px">Тип</label>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">${C.TYPES.map(tp=>`<button class="type-pill ${mf.type===tp?"active":""}" onclick="S.manualForm.type='${tp}';renderModal()">${tp}</button>`).join("")}</div>
-      <div style="display:flex;gap:8px;margin-bottom:14px">
-        <div style="flex:1"><label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">Срок годности</label><input class="inp" type="date" value="${h(mf.expiry)}" oninput="S.manualForm.expiry=this.value"></div>
-        <div style="flex:1"><label style="font-size:11px;color:${C.muted};display:block;margin-bottom:4px">Остаток (г)</label><input class="inp" type="number" value="${h(mf.qty)}" placeholder="500" oninput="S.manualForm.qty=this.value"></div>
-      </div>
-      <button onclick="saveManualIng()" style="width:100%;padding:12px;border-radius:10px;border:none;font-weight:700;font-size:14px;background:${C.accent};color:#0D0F14;cursor:pointer">Сохранить</button>`;
-  } else if(S.assignMode==="scan"){
-    content=`<div style="text-align:center;padding:16px 0">
-      <div style="font-size:44px;margin-bottom:10px">📷</div>
-      <p style="color:${C.muted2};font-size:13px;margin-bottom:16px;line-height:1.5">${S.stock.length?"Сканируйте — найдём в 1С и привяжем автоматически":"Сканируйте для привязки штрих-кода"}</p>
-      <label style="display:block;background:${C.accent};color:#0D0F14;padding:12px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer">
-        📸 Сфотографировать штрих-код
-        <input type="file" accept="image/*" capture="environment" style="display:none" onchange="handleAssignScan(this)">
-      </label>
-      ${S.scanDone?.error?`<div style="background:${C.dangerBg};border-radius:8px;padding:12px;margin-top:10px;font-size:13px;color:${C.danger}">${h(S.scanDone.error)}</div>`:""}
-    </div>`;
-  }
-
-  return `<div style="font-weight:700;font-size:17px;margin-bottom:2px">Добавить ингредиент</div>
-    <div style="font-size:11px;color:${C.muted};margin-bottom:14px">📍 ${h(path)}</div>
-    <div style="display:flex;gap:6px;margin-bottom:16px">${tabs.map(([m,label])=>`<button class="mode-tab ${S.assignMode===m?"active":""}" onclick="S.assignMode='${m}';S.scanDone=null;renderModal()">${label}</button>`).join("")}</div>
-    ${content}
-    <button onclick="closeModal()" style="width:100%;margin-top:12px;padding:10px;border-radius:10px;border:1px solid ${C.border};background:${C.card2};color:${C.muted2};cursor:pointer">Закрыть</button>`;
-}
-function updateAssignResults(){
-  const r=document.getElementById("assign-results");if(!r) return;
-  const results=S.stock.filter(x=>S.assignSearch&&(fuzzy(S.assignSearch,x.tradeName)||(x.inci&&fuzzy(S.assignSearch,x.inci)))).slice(0,15);
-  r.innerHTML=(!S.assignSearch?`<div style="color:${C.muted};font-size:12px;padding:12px 0;text-align:center">Начните вводить название</div>`:"")+
-    (S.assignSearch&&!results.length?`<div style="color:${C.muted};font-size:12px;padding:12px 0;text-align:center">Не найдено — <span style="color:${C.accent};cursor:pointer" onclick="S.assignMode='manual';S.manualForm.name=S.assignSearch;renderModal()">добавить вручную</span></div>`:"")+
-    results.map(x=>`<div class="search-row" onclick="doAssign('${h(x.tradeName)}')">
-      <div><div style="font-weight:600;font-size:13px">${h(x.tradeName)}</div><div style="display:flex;gap:4px;margin-top:2px">${expiryBadge(x.expiry)}${x.qty>0?`<span style="font-size:10px;color:${C.muted}">${x.qty}г</span>`:""}</div></div>
-      <span style="color:${C.accent};font-size:22px">+</span>
-    </div>`).join("");
-}
-function doAssign(tradeName){saveMeta(tradeName,{spotId:S.assignSpotId});closeModal();render();}
-function saveManualIng(){
-  const name=(document.getElementById("mf-ing-name")||{}).value?.trim()||S.manualForm.name?.trim();
-  if(!name) return;
-  saveMeta(name,{spotId:S.assignSpotId,inci:S.manualForm.inci,expiry:S.manualForm.expiry,qty:parseFloat(S.manualForm.qty)||0,type:S.manualForm.type,barcode:S.scanDone?.barcode||""});
-  closeModal();render();
-}
-function handleAssignScan(input){
-  const file = input.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    decodeBarcode(ev.target.result,
-      bc => {
-        const found = S.stock.find(x=>x.barcode===bc) || S.meta.find(x=>x.barcode===bc);
-        if(found){ doAssign(found.tradeName); }
-        else { S.scanDone={barcode:bc,notFound:true}; S.assignMode="manual"; renderModal(); }
-      },
-      () => { S.scanDone={error:"Не распознан. Попробуйте при ярком свете, ровно."}; renderModal(); }
-    );
-  };
-  reader.readAsDataURL(file);
-  input.value = "";
-}
-
-
-// ── Init ───────────────────────────────────────────────────────────────────
-try {
-  load();
-  render();
-} catch(e) {
-  console.error('Init error:', e);
-  document.body.innerHTML += '<div style="color:red;padding:20px;font-family:monospace">Error: ' + e.message + '<br>' + e.stack + '</div>';
-}
-</script>
-
-<script>
-// Register service worker for offline support
-if('serviceWorker' in navigator){
-  // Inline service worker as blob
-  const swCode = `
-    const CACHE = 'labpick-v1';
-    const ASSETS = ['./', './index.html'];
-    self.addEventListener('install', e => {
-      e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).catch(()=>{}));
-      self.skipWaiting();
-    });
-    self.addEventListener('activate', e => {
-      e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
-      self.clients.claim();
-    });
-    self.addEventListener('fetch', e => {
-      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('./')))); 
-    });
-  `;
-  const blob = new Blob([swCode], {type:'application/javascript'});
-  const swUrl = URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swUrl).catch(()=>{});
-}
-
-// Show "Add to Home Screen" hint for iOS
-window.addEventListener('load', () => {
-  const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
-  const isStandalone = window.navigator.standalone;
-  const dismissed = localStorage.getItem('pwa_hint_dismissed');
-  if(isIOS && !isStandalone && !dismissed){
-    const hint = document.createElement('div');
-    hint.id = 'pwa-hint';
-    hint.innerHTML = `
-      <div style="position:fixed;bottom:80px;left:12px;right:12px;background:#1E2028;border:1px solid #6EC6A0;border-radius:14px;padding:14px 16px;z-index:9999;box-shadow:0 4px 24px rgba(0,0,0,.6)">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div>
-            <div style="font-weight:700;font-size:14px;color:#E8EAF2;margin-bottom:4px">📲 Установить на экран</div>
-            <div style="font-size:12px;color:#8A8EA8;line-height:1.5">Нажми <strong style="color:#6EC6A0">Поделиться</strong> → <strong style="color:#6EC6A0">На экран Домой</strong><br>и приложение появится как нативное</div>
-          </div>
-          <button onclick="document.getElementById('pwa-hint').remove();localStorage.setItem('pwa_hint_dismissed','1')" 
-            style="background:none;border:none;color:#5A5D70;font-size:20px;padding:0 0 0 12px;cursor:pointer;flex-shrink:0">✕</button>
-        </div>
-        <div style="margin-top:10px;text-align:center">
-          <span style="font-size:24px">⬆️</span>
-          <span style="font-size:11px;color:#5A5D70;display:block;margin-top:2px">кнопка внизу Safari</span>
-        </div>
-      </div>`;
-    document.body.appendChild(hint);
-    // Auto hide after 10s
-    setTimeout(()=>{ const el=document.getElementById('pwa-hint'); if(el) el.remove(); }, 10000);
-  }
-});
+function dLo(){const e=(document.getElementById('le')||{}).value?.trim()||'';const p=(document.getElementById('lp')||{}).value?.trim()||'';const err=document.getElementById('lerr');if((e==='gde'||e==='demo@gdechto.app')&&p==='chto'){if(err)err.style.display='none';S.u={name:'Демо',email:'demo@gdechto.app'};sp('a');return;}const users=JSON.parse(localStorage.getItem('gc_users')||'[]');const user=users.find(u=>u.email===e&&u.pass===p);if(user){if(err)err.style.display='none';S.u=user;sp('a');return;}if(err)err.style.display='block';}
+function dRe(){const n=(document.getElementById('rn')||{}).value?.trim()||'';const e=(document.getElementById('re')||{}).value?.trim()||'';const p=(document.getElementById('rp')||{}).value?.trim()||'';const ag=(document.getElementById('ra')||{}).checked;const e1=document.getElementById('rerr'),e2=document.getElementById('rperr'),e3=document.getElementById('raerr');[e1,e2,e3].forEach(x=>{if(x)x.style.display='none';});if(!e||!e.includes('@')){if(e1)e1.style.display='block';return;}if(p.length<6){if(e2)e2.style.display='block';return;}if(!ag){if(e3)e3.style.display='block';return;}S.pe=e;S.pn=n||e.split('@')[0];const users=JSON.parse(localStorage.getItem('gc_users')||'[]');users.push({name:S.pn,email:e,pass:p});localStorage.setItem('gc_users',JSON.stringify(users));sp('v');const el=document.getElementById('vel');if(el)el.textContent=e;document.querySelectorAll('.ci').forEach(x=>x.value='');}
+function dL(){S.u={name:'Демо',email:'demo@gdechto.app'};sp('a');}
+function hR(){const e=(document.getElementById('he')||{}).value?.trim()||'';if(!e||!e.includes('@')){const el=document.getElementById('he');if(el)el.style.borderColor='#E53E3E';return;}S.pe=e;S.pn=e.split('@')[0];sp('v');const el=document.getElementById('vel');if(el)el.textContent=e;document.querySelectorAll('.ci').forEach(x=>x.value='');}
+function vC(){const code=Array.from(document.querySelectorAll('.ci')).map(x=>x.value).join('');const e=document.getElementById('cerr'),ok=document.getElementById('cok');if(code==='1234'||code.length===4){if(e)e.style.display='none';if(ok)ok.style.display='block';S.u={name:S.pn||'Пользователь',email:S.pe||''};setTimeout(()=>sp('a'),600);}else{if(e)e.style.display='block';if(ok)ok.style.display='none';}}
+function rC(){document.querySelectorAll('.ci').forEach(x=>x.value='');const el=document.getElementById('vs');if(el)el.innerHTML='Код отправлен повторно на <strong>'+h(S.pe||'')+'</strong>';document.querySelectorAll('.ci')[0]?.focus();}
+function ci(el,i){el.value=el.value.replace(/\D/g,'').slice(-1);if(el.value&&i<3)document.querySelectorAll('.ci')[i+1].focus();if(i===3&&el.value)vC();}
+function ck(el,e,i){if(e.key==='Backspace'&&!el.value&&i>0)document.querySelectorAll('.ci')[i-1].focus();}
+function rAS(){const u=S.u||{};return`<div class="an"><div class="alo2" onclick="sp('l')">Где<span>Что</span></div><div class="au"><span style="font-size:11px;color:#8896AA">${h(u.name||'')}</span><div class="ava">${(u.name||'U')[0].toUpperCase()}</div><button class="aex" onclick="sp('l')">Выйти</button></div></div><div class="ats" id="ats"><div class="at a" onclick="sT('warehouse')">Склад</div><div class="at" onclick="sT('stock')">Остатки 1С</div><div class="at" onclick="sT('pick')">Сборка</div><div class="at" onclick="sT('scan')">Сканер</div></div><div class="ab2" id="ab2"></div>`;}
+function sT(tab){S.tab=tab;if(tab!=='scan')stSc();document.querySelectorAll('.at').forEach((el,i)=>el.classList.toggle('a',['warehouse','stock','pick','scan'][i]===tab));rT();}
+function rT(){const el=document.getElementById('ab2');if(!el)return;if(S.tab==='warehouse')el.innerHTML=rW();else if(S.tab==='stock')el.innerHTML=rSt();else if(S.tab==='pick')el.innerHTML=rPk();else if(S.tab==='scan')el.innerHTML=rSc();}
+function rW(){let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px"><span class="slbl" style="margin:0">Структура склада</span><button class="abtn" style="font-size:10px;padding:6px 11px" onclick="om('room')">+ Помещение</button></div>`;
+if(!S.rooms.length)return html+`<div style="text-align:center;color:#8896AA;padding:44px 14px;background:#fff;border:1px solid #E8ECF2;border-radius:11px;line-height:2.2"><div style="font-size:36px;opacity:.2;margin-bottom:7px">[ ]</div>Добавьте первое помещение<br><span style="font-size:11px">Помещение — Стеллаж — Полка — Место</span></div>`;
+for(const room of S.rooms){const rr=S.racks.filter(r=>r.roomId===room.id);const ic=cri(room.id);const io=EX['r_'+room.id];html+=`<div class="card" style="border-left:3px solid ${room.color||PAL[0]}"><div class="ch" onclick="EX['r_${room.id}']=!EX['r_${room.id}'];rT()"><div class="cd" style="background:${room.color||PAL[0]}"></div><div style="flex:1;min-width:0"><div class="ct">${h(room.name)}</div><div class="cs">${rr.length} стеллажей · ${ic} позиций</div></div><button class="badd" onclick="event.stopPropagation();om('rack','${room.id}')">+ Стеллаж</button><button class="bico" onclick="event.stopPropagation();oe('room','${room.id}')">✏</button><button class="bico" onclick="event.stopPropagation();dR('${room.id}')">✕</button><span style="color:#C0C8D8;font-size:10px;flex-shrink:0">${io?'▲':'▼'}</span></div>${io?`<div class="chl">${rRa(room)}</div>`:''}</div>`;}
+return html;}
+function rRa(room){const items=S.racks.filter(r=>r.roomId===room.id);if(!items.length)return`<div style="font-size:11px;color:#8896AA;padding:7px 0">Нет стеллажей</div>`;return items.map(rack=>{const rs=S.shelves.filter(s=>s.rackId===rack.id);const ic=cra(rack.id);const io=EX['ra_'+rack.id];return`<div class="card" style="border-left:3px solid ${rack.color||PAL[1]};margin-bottom:5px"><div class="ch" onclick="EX['ra_${rack.id}']=!EX['ra_${rack.id}'];rT()"><div class="cd" style="background:${rack.color||PAL[1]}"></div><div style="flex:1;min-width:0"><div class="ct">${h(rack.name)}</div><div class="cs">${rs.length} полок · ${ic} позиций</div></div><button class="badd" style="font-size:8px;padding:2px 6px" onclick="event.stopPropagation();om('shelf','${rack.id}')">+ Полка</button><button class="bico" onclick="event.stopPropagation();oe('rack','${rack.id}')">✏</button><button class="bico" onclick="event.stopPropagation();dRa('${rack.id}')">✕</button><span style="color:#C0C8D8;font-size:10px;flex-shrink:0">${io?'▲':'▼'}</span></div>${io?`<div class="chl">${rSh(rack)}</div>`:''}</div>`;}).join('');}
+function rSh(rack){const items=S.shelves.filter(s=>s.rackId===rack.id);if(!items.length)return`<div style="font-size:11px;color:#8896AA;padding:7px 0">Нет полок</div>`;return items.map(shelf=>{const ss=S.spots.filter(s=>s.shelfId===shelf.id);const io=EX['sh_'+shelf.id];return`<div class="card" style="border-left:3px solid ${shelf.color||PAL[5]};margin-bottom:5px"><div class="ch" onclick="EX['sh_${shelf.id}']=!EX['sh_${shelf.id}'];rT()"><div class="cd" style="background:${shelf.color||PAL[5]}"></div><div style="flex:1;min-width:0"><div class="ct">${h(shelf.name)}</div><div class="cs">${ss.length} мест</div></div><button class="badd" style="font-size:8px;padding:2px 6px" onclick="event.stopPropagation();om('spot','${shelf.id}')">+ Место</button><button class="bico" onclick="event.stopPropagation();oe('shelf','${shelf.id}')">✏</button><button class="bico" onclick="event.stopPropagation();dSh('${shelf.id}')">✕</button><span style="color:#C0C8D8;font-size:10px;flex-shrink:0">${io?'▲':'▼'}</span></div>${io?`<div class="chl">${rSp(shelf)}</div>`:''}</div>`;}).join('');}
+function rSp(shelf){const items=S.spots.filter(s=>s.shelfId===shelf.id);if(!items.length)return`<div style="font-size:11px;color:#8896AA;padding:7px 0">Нет мест</div>`;return items.map(spot=>{const ings=gis(spot.id);const io=EX['sp_'+spot.id];const ih=ings.map(ing=>`<div class="ir" id="ing_${h(ing.tradeName)}" style="${S.hi===ing.tradeName?"border-left:2px solid #1E6BE6;background:#EBF5FF":""}"><div style="flex:1;min-width:0"><div class="in2">${h(ing.tradeName)}</div><div class="im">${ing.type?`<span class="tag tgr">${h(ing.type)}</span>`:''}${ing.inci?`<span class="tag tgr" style="font-style:italic">${h(ing.inci.slice(0,24))}</span>`:''}${eb(ing.expiry)}${ing.qty>0?`<span class="tag tgr">${ing.qty}г</span>`:''}${ing.barcode?'<span class="tag tb">штрих-код</span>':''}</div></div><div style="display:flex;gap:2px;margin-left:5px;flex-shrink:0"><button class="bico" onclick="oei('${h(ing.tradeName)}')">✏</button><button class="bico" onclick="svm('${h(ing.tradeName)}',{spotId:''});rT()">✕</button></div></div>`).join('');return`<div class="card" style="border-left:3px solid ${spot.color||PAL[6]};margin-bottom:5px"><div class="ch" onclick="EX['sp_${spot.id}']=!EX['sp_${spot.id}'];rT()"><div class="cd" style="background:${spot.color||PAL[6]}"></div><div style="flex:1;min-width:0"><div class="ct">${h(spot.name)}</div><div class="cs">${h(spot.type||'—')} · ${ings.length} позиций</div></div><button class="badd" style="font-size:8px;padding:2px 6px" onclick="event.stopPropagation();oas('${spot.id}')">+ Позицию</button><button class="bico" onclick="event.stopPropagation();oe('spot','${spot.id}')">✏</button><button class="bico" onclick="event.stopPropagation();dSp('${spot.id}')">✕</button><span style="color:#C0C8D8;font-size:10px;flex-shrink:0">${io?'▲':'▼'}</span></div>${io?`<div class="chl">${ings.length?ih:`<div style="font-size:11px;color:#8896AA;padding:5px 0">Пусто</div>`}</div>`:''}</div>`;}).join('');}
+function rSt(){return`<div class="card" style="padding:13px;margin-bottom:9px"><div class="slbl">Остатки из 1С</div><label style="display:block;background:#F8FAFF;border:1.5px dashed #D0D8E8;border-radius:7px;padding:10px;text-align:center;cursor:pointer;font-size:12px;color:#8896AA;margin-bottom:7px">Загрузить файл (CSV/TXT)<input type="file" accept=".csv,.tsv,.txt" style="display:none" onchange="l1f(this)"></label><button onclick="tp('sp2')" style="width:100%;background:#F8FAFF;border:1.5px solid #E0E8F4;border-radius:7px;padding:8px;color:#8896AA;font-size:12px;text-align:center">Вставить текст (Название;Кол-во;Срок)</button><div id="sp2" style="display:none;margin-top:7px"><textarea id="spt2" class="inp" style="height:75px;margin-bottom:7px;font-family:monospace;font-size:11px;resize:vertical" placeholder="Гиалуроновая к-та;500;2025-12-01&#10;Глицерин;1200"></textarea><div style="display:flex;gap:7px"><button class="abtn" style="flex:1" onclick="lSt()">Загрузить</button><button class="abtn-s" onclick="tp('sp2')">Отмена</button></div></div>${S.stock.length?`<div style="font-size:11px;color:#38A169;margin-top:7px;font-weight:600">Загружено ${S.stock.length} позиций</div>`:''}</div><input id="ss2" class="inp" placeholder="Поиск позиции..." oninput="rSL()" style="margin-bottom:9px"><div id="sl2"></div><script>setTimeout(rSL,0)<\/script>`;}
+function rSL(){const q=(document.getElementById('ss2')||{}).value||'';const el=document.getElementById('sl2');if(!el)return;if(!S.stock.length){el.innerHTML=`<div style="text-align:center;color:#8896AA;padding:28px;background:#fff;border:1px solid #E8ECF2;border-radius:11px">Загрузите выгрузку из 1С</div>`;return;}const f=S.stock.filter(x=>fz(q,x.tradeName)||(x.inci&&fz(q,x.inci)));el.innerHTML=f.slice(0,25).map(ing=>`<div class="card" style="padding:10px 13px;margin-bottom:7px"><div style="font-weight:600;font-size:13px;margin-bottom:3px;color:#0F1829">${h(ing.tradeName)}</div><div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">${ing.spotId?`<span class="loc">&#128205; ${h(gsp(ing.spotId))}</span>`:`<span class="tag tgr">Место не задано</span>`}${ing.barcode?'<span class="tag tb">штрих-код</span>':''}${eb(ing.expiry)}${ing.qty>0?`<span class="tag tgr">${ing.qty}г</span>`:''}</div></div>`).join('')+(f.length>25?`<div style="text-align:center;color:#8896AA;font-size:11px;padding:7px">Уточните поиск — ${f.length} позиций</div>`:'');}
+function rPk(){const sh=S.sheets.length>1?`<div style="margin-bottom:9px"><div class="slbl">Вкладки (${S.sheets.length})</div><div class="stabs">${S.sheets.map((s,i)=>`<button class="stab ${i===S.as?'a':''}" onclick="selSh(${i})">${h(s.name)} (${s.items.length})</button>`).join('')}</div></div>`:'';return`<div class="card" style="padding:13px;margin-bottom:9px"><div class="slbl">Тех карта</div><label style="display:block;background:#F8FAFF;border:1.5px dashed #D0D8E8;border-radius:7px;padding:10px;text-align:center;cursor:pointer;font-size:12px;color:#8896AA;margin-bottom:7px">Загрузить Excel (.xlsx)<input type="file" accept=".xlsx,.xls" style="display:none" onchange="lXl(this)"></label>${sh}<button onclick="tp('tp2')" style="width:100%;background:#F8FAFF;border:1.5px solid #E0E8F4;border-radius:7px;padding:8px;color:#8896AA;font-size:12px;text-align:center">Вставить из Excel (Фаза · Торговое · INCI · %)</button><div id="tp2" style="display:none;margin-top:7px"><textarea id="tpt2" class="inp" style="height:85px;margin-bottom:7px;font-family:monospace;font-size:11px;resize:vertical" placeholder="A&#9;Вода&#9;Aqua&#9;&#9;18.98&#10;&#9;Глицерин&#9;Glycerin&#9;&#9;5.0"></textarea><div style="display:flex;gap:7px"><button class="abtn" style="flex:1" onclick="lTt()">Загрузить</button><button class="abtn-s" onclick="tp('tp2')">Отмена</button></div></div>${S.tech.length?`<div style="font-size:11px;color:#38A169;margin-top:7px;font-weight:600">${h(S.pn2||'Продукт')} — ${S.tech.length} позиций</div>`:''}</div>${S.tech.length?`<div style="margin-bottom:11px"><label class="lbl">Масса партии (г / мл)</label><input id="bm2" class="inp" type="number" value="${h(S.bm)}" placeholder="15000" oninput="S.bm=this.value" onchange="rPI()"></div><div id="pi2"></div><script>setTimeout(rPI,0)<\/script>`:`<div style="text-align:center;color:#8896AA;padding:36px;background:#fff;border:1px solid #E8ECF2;border-radius:11px">Загрузите тех карту</div>`}`;} 
+function rPI(){const el=document.getElementById('pi2');if(!el)return;const bG=parseFloat(S.bm)||0;const phases=[...new Set(S.tech.map(i=>i.phase))].sort();let html='';for(const ph of phases){const phCol=PHC[ph]||'#1E6BE6';const items=S.tech.filter(i=>i.phase===ph);html+=`<div class="card" style="margin-bottom:9px"><div class="ph2" style="background:${phCol}10"><div class="phd" style="background:${phCol}"></div><span class="phl">Фаза ${ph}</span></div>${items.map((item,idx)=>{const s=S.stock.find(x=>fz(x.tradeName,item.trade)||fz(item.trade,x.tradeName))||S.meta.find(x=>fz(x.tradeName,item.trade)||fz(item.trade,x.tradeName));const path=s?.spotId?gsp(s.spotId):'';const grams=bG?((item.pct/100)*bG):0;const gs=grams?grams.toFixed(1):'';const inStock=s?parseFloat(s.qty)||0:0;const ok=inStock>=grams&&grams>0;const sc=grams>0?(ok?'#38A169':'#E53E3E'):'#8896AA';return`<div class="pr" onclick="gI('${h(item.trade)}')" style="${idx===items.length-1?'border:none':''}"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1;min-width:0"><div class="prn">${h(item.trade)}</div>${item.inci?`<div class="pri">${h(item.inci)}</div>`:''}<div style="margin-top:4px">${path?`<span class="loc">&#128205; ${h(path)}</span>`:`<span class="tag to" style="font-weight:600">Место не задано</span>`}</div><div style="margin-top:3px">${s?eb(s.expiry):''}</div></div><div class="prr"><div class="prp">${item.pct}%</div>${gs?`<div class="prg">${gs}г</div>`:''}${inStock>0?`<div class="prs">в наличии</div><div class="prv" style="color:${sc}">${inStock}г</div>`:''}</div></div></div>`;}).join('')}</div>`;}el.innerHTML=html;}
+function gI(name){S.hi=name;const m=S.meta.find(x=>x.tradeName===name);if(m?.spotId){const sp=S.spots.find(s=>s.id===m.spotId);if(sp){const sh=S.shelves.find(s=>s.id===sp.shelfId);if(sh){const ra=S.racks.find(r=>r.id===sh.rackId);if(ra){EX['r_'+ra.roomId]=true;EX['ra_'+ra.id]=true;EX['sh_'+sh.id]=true;EX['sp_'+sp.id]=true;}}}}sT('warehouse');setTimeout(()=>{const el=document.getElementById('ing_'+name);if(el)el.scrollIntoView({behavior:'smooth',block:'center'});},200);}
+let _str=null,_tmr=null;
+function stSc(){clearInterval(_tmr);if(_str){_str.getTracks().forEach(t=>t.stop());_str=null;}const v=document.getElementById('lv');if(v){v.style.display='none';v.srcObject=null;}}
+function stSc2(){S.ss=null;const v=document.getElementById('lv');if(!v)return;navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}}).then(stream=>{_str=stream;v.srcObject=stream;v.play();v.style.display='block';const sb=document.getElementById('ssb');const ss=document.getElementById('sst');const se=document.getElementById('ssp');if(sb)sb.textContent='Наведите камеру на штрих-код...';if(ss)ss.style.display='none';if(se)se.style.display='block';_tmr=setInterval(()=>{if(v.readyState<2)return;const cv=document.getElementById('sc');if(!cv)return;cv.width=v.videoWidth;cv.height=v.videoHeight;cv.getContext('2d').drawImage(v,0,0);const id=cv.getContext('2d').getImageData(0,0,cv.width,cv.height);if(window.jsQR){const r=window.jsQR(id.data,id.width,id.height,{inversionAttempts:'dontInvert'});if(r){oSc(r.data);return;}}if(window.ZXing){try{const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.QR_CODE]);hints.set(ZXing.DecodeHintType.TRY_HARDER,false);const rd=new ZXing.MultiFormatReader();rd.setHints(hints);const ls=new ZXing.HTMLCanvasElementLuminanceSource(cv);const res=rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));if(res){oSc(res.getText());return;}}catch(e){}}},400);}).catch(e=>{const sb=document.getElementById('ssb');if(sb){sb.textContent='Камера недоступна: '+e.message;sb.style.color='#E53E3E';}});}
+function oSc(bc){stSc();if(S.sm==='find')S.ss={type:'found',barcode:bc,ing:fib(bc)};else{S.lb=bc;S.ss={type:'link',barcode:bc};}rT();}
+function aMBC(){const inp=document.getElementById('mbc2');const bc=(inp?.value||'').trim();if(!bc)return;oSc(bc);if(inp)inp.value='';}
+function rSc(){const ss=S.ss;const bG=parseFloat(S.bm)||0;let res='';
+if(ss?.type==='found'){const ing=ss.ing;if(ing){const path=ing.spotId?gsp(ing.spotId):'';const inTech=S.tech.find(t=>fz(t.trade,ing.tradeName)||fz(ing.tradeName,t.trade));res=`<div class="rf"><div style="font-weight:700;font-size:14px;margin-bottom:3px;color:#0F1829">${h(ing.tradeName)}</div>${ing.inci?`<div style="font-size:10px;color:#8896AA;margin-bottom:5px">${h(ing.inci)}</div>`:''}<div style="margin-bottom:7px">${path?`<span class="loc">&#128205; ${h(path)}</span>`:''}</div><div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap">${eb(ing.expiry)}${ing.qty>0?`<span class="tag tgr">${ing.qty}г</span>`:''}</div>${S.tech.length?inTech?`<div class="ry"><div style="font-size:16px;font-weight:800;color:#38A169">Нужен</div><div style="font-size:11px;color:#6B7A8D;margin-top:2px">Фаза ${inTech.phase} · ${inTech.pct}%${bG?' · '+((inTech.pct/100)*bG).toFixed(1)+'г':''}</div></div>`:`<div class="rno"><div style="font-size:16px;font-weight:800;color:#E53E3E">Не нужен</div><div style="font-size:11px;color:#6B7A8D;margin-top:2px">Не в текущей тех карте</div></div>`:`<span class="tag tgr">Загрузите тех карту для проверки</span>`}<button onclick="S.ss=null;stSc2()" style="width:100%;margin-top:10px;background:#fff;border:1.5px solid #E8ECF2;color:#6B7A8D;border-radius:7px;padding:8px;font-size:12px;font-weight:600;cursor:pointer">Сканировать ещё</button></div>`;
+}else{res=`<div style="background:#FFF5F5;border:1.5px solid #FEB2B2;border-radius:11px;padding:13px;margin-bottom:9px"><div style="font-weight:700;color:#E53E3E;margin-bottom:3px">Штрих-код не найден</div><div style="font-size:11px;color:#8896AA;margin-bottom:9px;font-family:monospace;word-break:break-all">${h(ss.barcode)}</div><button onclick="S.sm='link';S.ss=null;S.lb='${h(ss.barcode||'')}';rT()" style="width:100%;background:#fff;border:1.5px solid #E8ECF2;color:#6B7A8D;border-radius:7px;padding:8px;font-size:11px;font-weight:600;cursor:pointer">Привязать к позиции</button></div>`;}}
+else if(ss?.type==='link'||(S.sm==='link'&&S.lb)){const bc=S.lb||ss?.barcode||'';res=`<div class="card" style="padding:13px;margin-bottom:9px"><div class="slbl">Штрих-код</div><div style="font-family:monospace;font-size:12px;color:#1E6BE6;margin-bottom:11px;word-break:break-all;font-weight:600">${h(bc)}</div><input id="ls2" class="inp" placeholder="Поиск позиции..." oninput="rLR()" style="margin-bottom:7px"><div id="lr2" style="max-height:190px;overflow-y:auto;margin-bottom:7px"></div><button id="lob" class="abtn" style="width:100%;display:none" onclick="cL('${h(bc)}')">Привязать</button></div><script>setTimeout(rLR,0)<\/script>`;}
+else if(ss?.type==='linked'){res=`<div style="background:#F0FFF4;border:1.5px solid #9AE6B4;border-radius:11px;padding:13px;text-align:center;margin-bottom:9px"><div style="font-size:16px;font-weight:800;color:#38A169">Привязано</div><div style="font-size:12px;color:#6B7A8D;margin-top:3px">${h(ss.name||'')}</div></div>`;}
+return`<div style="display:flex;gap:7px;margin-bottom:11px"><button onclick="S.sm='find';S.ss=null;S.lb=null;stSc();rT()" style="flex:1;padding:8px;border-radius:7px;border:1.5px solid ${S.sm==='find'?'#1E6BE6':'#E8ECF2'};background:${S.sm==='find'?'#EBF5FF':'#F8FAFF'};color:${S.sm==='find'?'#1E6BE6':'#6B7A8D'};font-size:11px;font-weight:${S.sm==='find'?700:500};cursor:pointer">Найти позицию</button><button onclick="S.sm='link';S.ss=null;S.lb=null;stSc();rT()" style="flex:1;padding:8px;border-radius:7px;border:1.5px solid ${S.sm==='link'?'#1E6BE6':'#E8ECF2'};background:${S.sm==='link'?'#EBF5FF':'#F8FAFF'};color:${S.sm==='link'?'#1E6BE6':'#6B7A8D'};font-size:11px;font-weight:${S.sm==='link'?700:500};cursor:pointer">Привязать код</button></div>
+<div class="sb"><div style="color:rgba(255,255,255,.9);font-size:12px;font-weight:600">${S.sm==='find'?'Наведите камеру на штрих-код':'Сканируйте для привязки'}</div><div class="vf"><div class="vc tl"></div><div class="vc tr"></div><div class="vc bl"></div><div class="vc br"></div></div><div id="ssb" style="color:rgba(255,255,255,.6);font-size:10px;margin-bottom:7px;min-height:13px"></div><button id="sst" class="sbtn" onclick="stSc2()">Включить камеру</button><button id="ssp" class="sbtn" style="display:none;background:#EBF5FF;color:#1E6BE6" onclick="stSc();document.getElementById('sst').style.display='block';document.getElementById('ssp').style.display='none'">Остановить</button></div>
+<div class="mbox"><div class="slbl">Ввести вручную</div><div style="display:flex;gap:7px"><input id="mbc2" class="inp" type="number" inputmode="numeric" placeholder="Цифры со штрих-кода" style="flex:1;font-size:14px" onkeydown="if(event.key==='Enter'){aMBC();event.preventDefault()}"><button class="abtn" onclick="aMBC()">Найти</button></div>${!S.tech.length&&S.sm==='find'?'<div style="font-size:10px;color:#DD6B20;margin-top:7px">Загрузите тех карту во вкладке Сборка</div>':''}</div>${res}`;}
+function rLR(){const q=(document.getElementById('ls2')||{}).value||'';const el=document.getElementById('lr2');const btn=document.getElementById('lob');if(!el)return;const res=S.stock.filter(x=>q&&(fz(q,x.tradeName)||(x.inci&&fz(q,x.inci)))).slice(0,10);el.innerHTML=(!q?`<div style="font-size:11px;color:#8896AA;padding:7px">Начните вводить...</div>`:'')+
+(q&&!res.length?`<div style="font-size:11px;color:#8896AA;padding:7px">Не найдено</div>`:'')+
+res.map(x=>`<div onclick="S.lt='${h(x.tradeName)}';rLR()" style="padding:8px 11px;border-radius:7px;margin-bottom:3px;cursor:pointer;background:${S.lt===x.tradeName?'#EBF5FF':'#F8FAFF'};border:1.5px solid ${S.lt===x.tradeName?'#1E6BE6':'#E8ECF2'}"><div style="font-weight:600;font-size:12px;color:#0F1829">${h(x.tradeName)}</div>${x.inci?`<div style="font-size:10px;color:#8896AA">${h(x.inci)}</div>`:''}</div>`).join('');
+if(btn){btn.style.display=S.lt?'block':'none';if(S.lt)btn.textContent='Привязать: '+S.lt.slice(0,28);}}
+function cL(bc){if(!S.lt)return;svm(S.lt,{barcode:bc});const name=S.lt;S.lb=null;S.lt=null;S.ss={type:'linked',name};rT();}
+function p1c(text){return text.trim().split('\n').map((line,i)=>{const c=line.split(/[;\t]/).map(s=>s.replace(/^"|"$/g,'').trim());if(!c[0]||['наименование','name'].includes(c[0].toLowerCase()))return null;return{id:'i'+i,tradeName:c[0],qty:parseFloat(c[1]?.replace(',','.'))||0,expiry:c[2]||'',inci:'',barcode:'',spotId:''};}).filter(Boolean);}
+function pTt(text){let ph='';return text.trim().split('\n').map(line=>{const c=line.split(/\t/).map(s=>s.trim());if(c[0])ph=c[0].toUpperCase();if(!c[1]||c[1]==='Торговое наименование')return null;return{phase:ph||'А',trade:c[1],inci:c[2]||'',pct:parseFloat(c[3]?.replace(',','.'))||0};}).filter(Boolean);}
+function pTR(rows){const isA=rows.some(r=>{const v=String(r[1]||'').trim();return v.length===1&&/^[А-ЯA-Z]$/.test(v);});return isA?pTRA(rows):pSS(rows)[0]?.items||[];}
+function pTRA(rows){let ph='';const items=[];for(const row of rows){const phase=String(row[1]||'').trim(),trade=String(row[2]||'').trim(),inci=String(row[3]||'').trim();const pct=parseFloat(String(row[5]||row[4]||'').replace(',','.'));if(phase.length===1&&/^[А-ЯA-Z]$/.test(phase))ph=phase.toUpperCase();if(!trade||trade==='Торговое наименование')continue;if(isNaN(pct)||pct<=0)continue;items.push({phase:ph||'А',trade,inci,pct});}return items;}
+function pSS(rows){const products=[];let cN='',cI=[],inT=false;for(const row of rows){const c1=String(row[1]||'').trim(),c2=String(row[2]||'').trim(),c3=String(row[3]||'').trim();if(c1==='Торговое наименование'||c1==='Наименование'){inT=true;continue;}const pct=parseFloat(c3.replace(',','.'));if(inT&&c1&&!isNaN(pct)&&pct>0){cI.push({phase:'А',trade:c1,inci:c2,pct});continue;}if(inT&&(!c1||(!isNaN(parseFloat(c1))&&cI.length>0))){if(cN&&cI.length)products.push({name:cN,items:cI});cN='';cI=[];inT=false;continue;}if(!inT&&c1&&isNaN(parseFloat(c3))){if(cN&&cI.length)products.push({name:cN,items:cI});cN=c1;cI=[];inT=false;}}if(cN&&cI.length)products.push({name:cN,items:cI});return products;}
+function l1f(input){const f=input.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{S.stock=ms(p1c(ev.target.result));rT();};r.readAsText(f,'utf-8');input.value='';}
+function lSt(){const t=(document.getElementById('spt2')||{}).value||'';S.stock=ms(p1c(t));rT();}
+function lTt(){const t=(document.getElementById('tpt2')||{}).value||'';S.tech=pTt(t);S.pn2='';S.sheets=[];rT();}
+function lXl(input){const f=input.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{if(!window.XLSX){alert('Загружается, повторите');return;}const wb=window.XLSX.read(ev.target.result,{type:'array'});const sheets=[];for(const name of wb.SheetNames){const ws=wb.Sheets[name];const rows=window.XLSX.utils.sheet_to_json(ws,{header:1,defval:''});const multi=pSS(rows);if(multi.length>1)multi.forEach(p=>sheets.push({name:p.name||name,items:p.items}));else{const items=pTR(rows);if(items.length>0)sheets.push({name,items});}}if(!sheets.length){alert('Тех карты не найдены');return;}S.sheets=sheets;S.as=0;S.tech=sheets[0].items;S.pn2=sheets[0].name;}catch(e){alert('Ошибка: '+e.message);}rT();};r.readAsArrayBuffer(f);input.value='';}
+function selSh(i){S.as=i;S.tech=S.sheets[i].items;S.pn2=S.sheets[i].name;rT();}
+function dR(id){sD('Удалить помещение? Все вложенные данные тоже удалятся.',()=>{const rids=S.racks.filter(r=>r.roomId===id).map(r=>r.id);const sids=S.shelves.filter(s=>rids.includes(s.rackId)).map(s=>s.id);const pids=S.spots.filter(s=>sids.includes(s.shelfId)).map(s=>s.id);S.meta=S.meta.map(x=>pids.includes(x.spotId)?{...x,spotId:''}:x);S.spots=S.spots.filter(x=>!pids.includes(x.id));S.shelves=S.shelves.filter(x=>!sids.includes(x.id));S.racks=S.racks.filter(x=>!rids.includes(x.id));S.rooms=S.rooms.filter(x=>x.id!==id);sv();cM();rT();});}
+function dRa(id){sD('Удалить стеллаж?',()=>{const sids=S.shelves.filter(s=>s.rackId===id).map(s=>s.id);const pids=S.spots.filter(s=>sids.includes(s.shelfId)).map(s=>s.id);S.meta=S.meta.map(x=>pids.includes(x.spotId)?{...x,spotId:''}:x);S.spots=S.spots.filter(x=>!pids.includes(x.id));S.shelves=S.shelves.filter(x=>x.rackId!==id);S.racks=S.racks.filter(x=>x.id!==id);sv();cM();rT();});}
+function dSh(id){sD('Удалить полку?',()=>{const pids=S.spots.filter(s=>s.shelfId===id).map(s=>s.id);S.meta=S.meta.map(x=>pids.includes(x.spotId)?{...x,spotId:''}:x);S.spots=S.spots.filter(x=>x.shelfId!==id);S.shelves=S.shelves.filter(x=>x.id!==id);sv();cM();rT();});}
+function dSp(id){sD('Удалить место?',()=>{S.meta=S.meta.map(x=>x.spotId===id?{...x,spotId:''}:x);S.spots=S.spots.filter(x=>x.id!==id);sv();cM();rT();});}
+function sD(msg,fn){S.modal='del';S.dm=msg;S.df=fn;rM();oM();}
+function oM(){document.getElementById('mov').classList.remove('hidden');}
+function cM(){document.getElementById('mov').classList.add('hidden');S.modal=null;}
+function cbg(e){if(e.target===document.getElementById('mov'))cM();}
+function om(type,pid){S.modal=type;S.eid=null;S.mpid=pid||null;S.mf2={name:'',color:'',type:''};rM();oM();}
+function oe(type,id){S.modal=type;S.eid=id;let item;if(type==='room')item=S.rooms.find(x=>x.id===id);else if(type==='rack')item=S.racks.find(x=>x.id===id);else if(type==='shelf')item=S.shelves.find(x=>x.id===id);else if(type==='spot')item=S.spots.find(x=>x.id===id);S.mf2={name:item?.name||'',color:item?.color||'',type:item?.type||''};rM();oM();}
+function oas(sid){S.modal='assign';S.sid=sid;S.am=S.stock.length?'search':'manual';S.as2='';S.mf={name:'',inci:'',expiry:'',qty:'',type:''};S.scanDone=null;rM();oM();}
+function oei(name){const m=S.meta.find(x=>x.tradeName===name)||{tradeName:name};S.modal='editIng';S.ein=name;S.eif={tradeName:m.tradeName||'',inci:m.inci||'',expiry:m.expiry||'',qty:m.qty||'',type:m.type||'',barcode:m.barcode||''};rM();oM();}
+function rM(){
+const box=document.getElementById('mb2');const t=S.modal;
+if(t==='del'){box.innerHTML=`<div class="db"><div style="font-size:14px;font-weight:800;color:#E53E3E;margin-bottom:7px">Подтвердите удаление</div><div style="font-size:12px;color:#6B7A8D;margin-bottom:16px;line-height:1.5">${h(S.dm)}</div><div style="display:flex;gap:7px"><button style="flex:1;padding:10px;border-radius:7px;border:none;background:#E53E3E;color:#fff;font-weight:700;cursor:pointer" onclick="S.df&&S.df()">Удалить</button><button class="abtn-s" style="flex:1" onclick="cM()">Отмена</button></div></div>`;return;}
+if(t==='assign'){box.innerHTML=rAM();return;}
+if(t==='editIng'){box.innerHTML=rEIM();return;}
+const isE=!!S.eid;const titles={room:['Новое помещение','Редактировать помещение'],rack:['Новый стеллаж','Редактировать стеллаж'],shelf:['Новая полка','Редактировать полку'],spot:['Новое место','Редактировать место']};const ph2={room:'Производственный цех',rack:'Стеллаж 1',shelf:'Полка верхняя',spot:'Место А1'};const f=S.mf2;
+let html=`<div class="mt">${titles[t]?.[isE?1:0]||''}</div><div class="ms2">${isE?'Измените нужные поля':'Заполните поля'}</div><div class="fg"><label class="lbl">Название</label><input id="mfn" class="inp" value="${h(f.name)}" placeholder="${ph2[t]||''}" onkeydown="if(event.key==='Enter')sM()"></div>`;
+if(['room','rack','shelf','spot'].includes(t)){html+=`<label class="lbl">Цвет</label><div class="sws">${PAL.map(col=>`<div class="sw ${f.color===col?'a':''}" style="background:${col}" onclick="S.mf2.color='${col}';S.mf2.name=document.getElementById('mfn')?.value||S.mf2.name;rM()"></div>`).join('')}</div>`;}
+if(t==='spot'){html+=`<label class="lbl">Тип хранения</label><div class="tp">${TYP.map(tp=>`<button class="tpi ${f.type===tp?'a':''}" onclick="S.mf2.type='${tp}';S.mf2.name=document.getElementById('mfn')?.value||S.mf2.name;rM()">${tp}</button>`).join('')}</div>`;}
+html+=`<div style="display:flex;gap:7px;margin-top:13px"><button class="abtn" style="flex:1" onclick="sM()">${isE?'Сохранить':'Добавить'}</button><button class="abtn-s" onclick="cM()">Отмена</button></div>`;
+box.innerHTML=html;setTimeout(()=>document.getElementById('mfn')?.focus(),70);}
+function sM(){const name=(document.getElementById('mfn')||{}).value?.trim();if(!name)return;const t=S.modal;const f={...S.mf2,name};
+if(S.eid){const eid=S.eid;if(t==='room')S.rooms=S.rooms.map(x=>x.id===eid?{...x,name,color:f.color||x.color}:x);else if(t==='rack')S.racks=S.racks.map(x=>x.id===eid?{...x,name,color:f.color||x.color}:x);else if(t==='shelf')S.shelves=S.shelves.map(x=>x.id===eid?{...x,name,color:f.color||x.color}:x);else if(t==='spot')S.spots=S.spots.map(x=>x.id===eid?{...x,name,type:f.type||x.type,color:f.color||x.color}:x);}
+else{const id=t+'_'+uid();if(t==='room')S.rooms.push({id,name,color:f.color||PAL[0]});else if(t==='rack')S.racks.push({id,roomId:S.mpid,name,color:f.color||PAL[1]});else if(t==='shelf')S.shelves.push({id,rackId:S.mpid,name,color:f.color||PAL[5]});else if(t==='spot')S.spots.push({id,shelfId:S.mpid,name,type:f.type||'Прочее',color:f.color||PAL[6]});}
+sv();cM();rT();}
+function rAM(){const path=gsp(S.sid)||'—';const mf=S.mf;const tabs=S.stock.length?[['search','Из остатков'],['scan','Сканер'],['manual','Вручную']]:[['manual','Вручную'],['scan','Сканер']];let content='';
+if(S.am==='search'){const res=S.stock.filter(x=>S.as2&&(fz(S.as2,x.tradeName)||(x.inci&&fz(S.as2,x.inci)))).slice(0,15);content=`<input class="inp" placeholder="Поиск: гиалур... или hyal..." value="${h(S.as2)}" oninput="S.as2=this.value;uAR()" style="margin-bottom:7px"><div id="ar2" style="max-height:240px;overflow-y:auto">${!S.as2?`<div style="font-size:11px;color:#8896AA;padding:10px;text-align:center">Начните вводить название</div>`:''
+}${S.as2&&!res.length?`<div style="font-size:11px;color:#8896AA;padding:10px;text-align:center">Не найдено — <a style="color:#1E6BE6;cursor:pointer" onclick="S.am='manual';S.mf.name=S.as2;rM()">добавить вручную</a></div>`:''
+}${res.map(x=>`<div onclick="dA('${h(x.tradeName)}')" style="padding:8px 11px;border-radius:7px;margin-bottom:3px;cursor:pointer;background:#F8FAFF;border:1.5px solid #E8ECF2;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:600;font-size:12px;color:#0F1829">${h(x.tradeName)}</div><div style="display:flex;gap:3px;margin-top:2px">${eb(x.expiry)}${x.qty>0?`<span class="tag tgr">${x.qty}г</span>`:''}</div></div><span style="color:#1E6BE6;font-size:16px">+</span></div>`).join('')}</div>`;}
+else if(S.am==='manual'){content=`${S.scanDone?.notFound?`<div style="background:#EBF5FF;border:1px solid #C5D8FF;border-radius:7px;padding:8px 11px;margin-bottom:9px;font-size:11px;color:#4A5568">Штрих-код будет привязан: <strong style="color:#1E6BE6">${h((S.scanDone.barcode||'').slice(-10))}</strong></div>`:''}<div class="fg"><label class="lbl">Название *</label><input id="mfin" class="inp" value="${h(mf.name)}" placeholder="Гиалуроновая кислота LMW" oninput="S.mf.name=this.value"></div><div class="fg"><label class="lbl">INCI</label><input class="inp" value="${h(mf.inci)}" placeholder="Sodium Hyaluronate" oninput="S.mf.inci=this.value"></div><label class="lbl">Тип</label><div class="tp" style="margin-bottom:9px">${TYP.map(tp=>`<button class="tpi ${mf.type===tp?'a':''}" onclick="S.mf.type='${tp}';rM()">${tp}</button>`).join('')}</div><div style="display:flex;gap:7px;margin-bottom:11px"><div style="flex:1"><label class="lbl">Срок годности</label><input class="inp" type="date" value="${h(mf.expiry)}" oninput="S.mf.expiry=this.value"></div><div style="flex:1"><label class="lbl">Остаток (г)</label><input class="inp" type="number" value="${h(mf.qty)}" placeholder="500" oninput="S.mf.qty=this.value"></div></div><button class="abtn" style="width:100%" onclick="sMI()">Сохранить</button>`;}
+else{content=`<div style="text-align:center;padding:14px 0"><label style="display:block;background:#1E6BE6;color:#fff;padding:11px;border-radius:9px;font-weight:700;font-size:13px;cursor:pointer">Сфотографировать штрих-код<input type="file" accept="image/*" capture="environment" style="display:none" onchange="hAS(this)"></label>${S.scanDone?.error?`<div style="color:#E53E3E;font-size:11px;margin-top:9px">${h(S.scanDone.error)}</div>`:''}</div>`;}
+return`<div class="mt">Добавить позицию</div><div class="ms2">Место: ${h(path)}</div><div class="mts">${tabs.map(([m,l])=>`<button class="mta ${S.am===m?'a':''}" onclick="S.am='${m}';S.scanDone=null;rM()">${l}</button>`).join('')}</div>${content}<button class="abtn-s" style="width:100%;margin-top:9px" onclick="cM()">Закрыть</button>`;}
+function uAR(){const el=document.getElementById('ar2');if(!el)return;const res=S.stock.filter(x=>S.as2&&(fz(S.as2,x.tradeName)||(x.inci&&fz(S.as2,x.inci)))).slice(0,15);el.innerHTML=(!S.as2?`<div style="font-size:11px;color:#8896AA;padding:10px;text-align:center">Начните вводить...</div>`:'')+
+(S.as2&&!res.length?`<div style="font-size:11px;color:#8896AA;padding:10px;text-align:center">Не найдено — <a style="color:#1E6BE6;cursor:pointer" onclick="S.am='manual';S.mf.name=S.as2;rM()">вручную</a></div>`:'')+
+res.map(x=>`<div onclick="dA('${h(x.tradeName)}')" style="padding:8px 11px;border-radius:7px;margin-bottom:3px;cursor:pointer;background:#F8FAFF;border:1.5px solid #E8ECF2;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:600;font-size:12px;color:#0F1829">${h(x.tradeName)}</div><div style="display:flex;gap:3px;margin-top:2px">${eb(x.expiry)}${x.qty>0?`<span class="tag tgr">${x.qty}г</span>`:''}</div></div><span style="color:#1E6BE6;font-size:16px">+</span></div>`).join('');}
+function dA(name){svm(name,{spotId:S.sid});cM();rT();}
+function sMI(){const name=(document.getElementById('mfin')||{}).value?.trim()||S.mf.name?.trim();if(!name)return;svm(name,{spotId:S.sid,inci:S.mf.inci,expiry:S.mf.expiry,qty:parseFloat(S.mf.qty)||0,type:S.mf.type,barcode:S.scanDone?.barcode||''});cM();rT();}
+function rEIM(){const f=S.eif;return`<div class="mt">Редактировать позицию</div><div class="ms2">Изменение данных</div><div class="fg"><label class="lbl">Название</label><input class="inp" value="${h(f.tradeName)}" oninput="S.eif.tradeName=this.value"></div><div class="fg"><label class="lbl">INCI</label><input class="inp" value="${h(f.inci)}" placeholder="Sodium Hyaluronate" oninput="S.eif.inci=this.value"></div><label class="lbl">Тип</label><div class="tp" style="margin-bottom:10px">${TYP.map(tp=>`<button class="tpi ${f.type===tp?'a':''}" onclick="S.eif.type='${tp}';rM()">${tp}</button>`).join('')}</div><div style="display:flex;gap:7px;margin-bottom:10px"><div style="flex:1"><label class="lbl">Срок годности</label><input class="inp" type="date" value="${h(f.expiry)}" oninput="S.eif.expiry=this.value"></div><div style="flex:1"><label class="lbl">Остаток (г)</label><input class="inp" type="number" value="${h(f.qty)}" placeholder="500" oninput="S.eif.qty=this.value"></div></div><label class="lbl">Штрих-код</label><div style="display:flex;gap:7px;margin-bottom:5px"><input id="bci" class="inp" type="number" inputmode="numeric" value="${h(f.barcode)}" placeholder="Введите цифры или сканируйте" style="flex:1;font-size:14px" oninput="S.eif.barcode=this.value"><label style="display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:7px;background:#EBF5FF;border:1.5px solid #C5D8FF;cursor:pointer;flex-shrink:0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1E6BE6" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><input type="file" accept="image/*" capture="environment" style="display:none" onchange="sFE(this)"></label></div><div id="bcst" style="font-size:10px;color:#8896AA;margin-bottom:12px">Введите цифры или сфотографируйте</div><div style="display:flex;gap:7px"><button class="abtn" style="flex:1" onclick="sEI()">Сохранить</button><button class="abtn-s" onclick="cM()">Отмена</button></div>`;}
+function sEI(){const f=S.eif;const name=f.tradeName.trim();if(!name)return;if(name!==S.ein){const i=S.meta.findIndex(x=>x.tradeName===S.ein);if(i>=0)S.meta[i]={...S.meta[i],tradeName:name};}svm(name,{inci:f.inci,expiry:f.expiry,qty:parseFloat(f.qty)||0,type:f.type,barcode:f.barcode});cM();rT();}
+function dBC(dataUrl,ok,fail){const img=new Image();img.onload=()=>{function t1(r,s,cb){const cv=document.createElement('canvas');const rad=r*Math.PI/180;const sw=img.width*s,sh=img.height*s;if(r===90||r===270){cv.width=sh;cv.height=sw;}else{cv.width=sw;cv.height=sh;}const ctx=cv.getContext('2d');ctx.save();ctx.translate(cv.width/2,cv.height/2);ctx.rotate(rad);ctx.scale(s,s);ctx.drawImage(img,-img.width/2,-img.height/2);ctx.restore();const id=ctx.getImageData(0,0,cv.width,cv.height);if(window.jsQR){const r2=window.jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});if(r2)return cb(r2.data);}if(window.ZXing){try{const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.QR_CODE]);hints.set(ZXing.DecodeHintType.TRY_HARDER,true);const rd=new ZXing.MultiFormatReader();rd.setHints(hints);const ls=new ZXing.HTMLCanvasElementLuminanceSource(cv);const res=rd.decode(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(ls)));if(res)return cb(res.getText());}catch(e){}}cb(null);}
+const att=[{r:0,s:1},{r:90,s:1},{r:0,s:2},{r:270,s:1}];let i=0;function nx(){if(i>=att.length)return fail();const{r,s}=att[i++];t1(r,s,res=>{if(res)ok(res);else nx();});}nx();};img.onerror=fail;img.src=dataUrl;}
+function sFE(input){const f=input.files[0];if(!f)return;const st=document.getElementById('bcst');if(st){st.textContent='Распознаём...';st.style.color='#8896AA';}const r=new FileReader();r.onload=ev=>{dBC(ev.target.result,bc=>{S.eif.barcode=bc;const el=document.getElementById('bci');if(el){el.value=bc;el.style.borderColor='#38A169';}if(st){st.textContent='Распознан: '+bc;st.style.color='#38A169';}if(S.ein)svm(S.ein,{barcode:bc});},()=>{if(st){st.textContent='Не распознан. Попробуйте ближе.';st.style.color='#E53E3E';}});};r.readAsDataURL(f);input.value='';}
+function hAS(input){const f=input.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{dBC(ev.target.result,bc=>{const found=S.stock.find(x=>x.barcode===bc)||S.meta.find(x=>x.barcode===bc);if(found)dA(found.tradeName);else{S.scanDone={barcode:bc,notFound:true};S.am='manual';rM();}},()=>{S.scanDone={error:'Не распознан. Попробуйте ближе.'};rM();});};r.readAsDataURL(f);input.value='';}
+function lS(src,cb){const s=document.createElement('script');s.src=src;s.onload=cb||function(){};s.onerror=function(){if(cb)cb();};document.head.appendChild(s);}
+lS('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js',()=>lS('https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js'));
+lS('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
+try{ld();sp('l');}catch(e){document.body.innerHTML='<div style="padding:20px;color:red;font-family:monospace">Ошибка: '+e.message+'</div>';}
 </script>
 </body>
 </html>
