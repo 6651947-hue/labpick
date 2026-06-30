@@ -402,7 +402,7 @@ function renderBNav(){
 }
 function rT(){const el=document.getElementById('ab2');if(!el)return;if(S.tab==='warehouse')el.innerHTML=rW();else if(S.tab==='stock'){el.innerHTML=rSt();if(S.stock.length)setTimeout(rSL,0);}else if(S.tab==='pick'){el.innerHTML=rPk();setTimeout(updateProgress,0);}else if(S.tab==='inv')el.innerHTML=rInv();else if(S.tab==='scan')el.innerHTML=rSc();else if(S.tab==='brew')el.innerHTML=rBrew();}
 function rW(){
-  let html=`<div style="display:flex;align-items:center;margin-bottom:11px"><span class="slbl" style="margin:0">Структура склада</span></div><div style="display:flex;flex-direction:column-reverse">`;
+  let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px"><span class="slbl" style="margin:0">Структура склада</span>${S.rooms.length?`<button onclick="exportWarehouse()" style="background:#F0FFF4;border:1.5px solid #9AE6B4;color:#276749;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">📥 Экспорт</button>`:''}</div><div style="display:flex;flex-direction:column-reverse">`;
   if(!S.rooms.length)return html+`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center">
     <div style="font-size:40px;opacity:.2;margin-bottom:12px">&#127981;</div>
     <div style="font-weight:700;font-size:15px;color:#0F1829;margin-bottom:6px">Добавьте первое помещение</div>
@@ -2460,6 +2460,14 @@ function showResetModal(){
         <div>🗑 Карточки ингредиентов</div>
         <div style="font-size:11px;font-weight:400;color:#8896AA;margin-top:2px">INCI, тип, упаковка, срок годности, привязки мест</div>
       </button>
+      <button onclick="resetData('brew')" class="rst-btn" style="background:#FFF5F5;border:1.5px solid #FEB2B2;color:#C53030;border-radius:9px;padding:12px 14px;text-align:left;font-size:13px;font-weight:600;cursor:pointer">
+        <div>🗑 Варка</div>
+        <div style="font-size:11px;font-weight:400;color:#8896AA;margin-top:2px">Текущая варка и вся история варок</div>
+      </button>
+      <button onclick="resetData('inv')" class="rst-btn" style="background:#FFF5F5;border:1.5px solid #FEB2B2;color:#C53030;border-radius:9px;padding:12px 14px;text-align:left;font-size:13px;font-weight:600;cursor:pointer">
+        <div>🗑 Инвентаризация</div>
+        <div style="font-size:11px;font-weight:400;color:#8896AA;margin-top:2px">Текущая активная инвентаризация (введённые факты)</div>
+      </button>
       <button onclick="resetData('all')" style="background:#E53E3E;border:none;color:#fff;border-radius:9px;padding:13px 14px;text-align:left;font-size:13px;font-weight:700;cursor:pointer">
         <div>💥 Сбросить всё полностью</div>
         <div style="font-size:11px;font-weight:400;opacity:.8;margin-top:2px">Вернуть приложение к начальному состоянию</div>
@@ -2470,13 +2478,15 @@ function showResetModal(){
 }
 
 function resetData(what){
-  const labels={stock:'остатки 1С',tech:'тех карту',warehouse:'склад',meta:'карточки ингредиентов',all:'ВСЕ данные'};
+  const labels={stock:'остатки 1С',tech:'тех карту',warehouse:'склад',meta:'карточки ингредиентов',brew:'варку и историю варок',inv:'текущую инвентаризацию',all:'ВСЕ данные'};
   if(!confirm('Сбросить '+labels[what]+'? Отменить нельзя.'))return;
   if(what==='stock'||what==='all'){S.stock=[];localStorage.removeItem('gc_stock');}
   if(what==='tech'||what==='all'){S.tech=[];S.sheets=[];S.checked={};S.bm='';S.pn2='';S.as=0;localStorage.removeItem('gc_tech');localStorage.removeItem('gc_sheets');}
   if(what==='warehouse'||what==='all'){S.rooms=[];S.racks=[];S.shelves=[];S.spots=[];['rooms','racks','shelves','spots'].forEach(k=>localStorage.removeItem('gc_'+k));}
   if(what==='meta'||what==='all'){S.meta=[];localStorage.removeItem('gc_meta');}
-  if(what==='all'){S.inv={active:false,items:{},startedAt:null};S.brew={active:false,name:'',batch:0,tech:[],fact:{},startedAt:null};S.brewHistory=[];S.checked={};}
+  if(what==='brew'||what==='all'){S.brew={active:false,name:'',batch:0,tech:[],fact:{},instructions:[],specs:[],startedAt:null};S.brewHistory=[];localStorage.removeItem('gc_brewHistory');}
+  if(what==='inv'||what==='all'){S.inv={active:false,items:{},startedAt:null};}
+  if(what==='all'){S.checked={};}
   sv();cM();rT();
 }
 
@@ -2520,6 +2530,93 @@ function invNamePickFirst(){
   if(!res||res.style.display==='none')return;
   const first=res.querySelector('div[onclick]');
   if(first)first.click();
+}
+
+// ── Экспорт структуры склада ──
+function exportWarehouse(){
+  const mb=document.getElementById('mb2');if(!mb)return;
+  mb.innerHTML=`
+    <div class="mt">Экспорт склада</div>
+    <div style="font-size:13px;color:#6B7A8D;margin-bottom:16px">Выгрузка всей структуры: помещения, стеллажи, полки, места и привязанные позиции</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button onclick="doExportWarehouse('xlsx')" style="background:#F0FFF4;border:1.5px solid #9AE6B4;color:#276749;border-radius:9px;padding:12px 14px;text-align:left;font-size:13px;font-weight:700;cursor:pointer">
+        Excel (.xlsx)
+        <div style="font-size:11px;font-weight:400;color:#8896AA;margin-top:2px">Полная таблица с местами и количеством</div>
+      </button>
+      <button onclick="doExportWarehouse('csv')" style="background:#FFF8F0;border:1.5px solid #FBD38D;color:#7B4F0E;border-radius:9px;padding:12px 14px;text-align:left;font-size:13px;font-weight:700;cursor:pointer">
+        CSV
+        <div style="font-size:11px;font-weight:400;color:#8896AA;margin-top:2px">С BOM, открывается в Excel</div>
+      </button>
+      <button class="abtn-s" style="width:100%;padding:10px" onclick="cM()">Отмена</button>
+    </div>`;
+  oM();
+}
+function _buildWarehouseRows(){
+  const rows=[];
+  S.rooms.forEach(room=>{
+    const racks=S.racks.filter(r=>r.roomId===room.id);
+    // Позиции прямо в помещении (без стеллажа)
+    gis(room.id).forEach(ing=>rows.push({room:room.name,rack:'',shelf:'',spot:'',ing}));
+    racks.forEach(rack=>{
+      const shelves=S.shelves.filter(s=>s.rackId===rack.id);
+      gis(rack.id).forEach(ing=>rows.push({room:room.name,rack:rack.name,shelf:'',spot:'',ing}));
+      shelves.forEach(shelf=>{
+        const spots=S.spots.filter(s=>s.shelfId===shelf.id);
+        gis(shelf.id).forEach(ing=>rows.push({room:room.name,rack:rack.name,shelf:shelf.name,spot:'',ing}));
+        spots.forEach(spot=>{
+          const ings=gis(spot.id);
+          if(ings.length){
+            ings.forEach(ing=>rows.push({room:room.name,rack:rack.name,shelf:shelf.name,spot:spot.name,ing}));
+          } else {
+            // Пустое место — тоже показываем в выгрузке
+            rows.push({room:room.name,rack:rack.name,shelf:shelf.name,spot:spot.name,ing:null});
+          }
+        });
+      });
+    });
+  });
+  return rows;
+}
+function doExportWarehouse(fmt){
+  const rows=_buildWarehouseRows();
+  if(!rows.length){alert('Склад пуст — нет данных для экспорта');return;}
+  const date=new Date().toLocaleDateString('ru').replace(/\./g,'-');
+
+  if(fmt==='csv'){
+    let csv='Помещение;Стеллаж;Полка;Место;Ингредиент;INCI;Остаток (г);Штрихкод;Срок годности\n';
+    csv+=rows.map(r=>{
+      const ing=r.ing;
+      return[r.room,r.rack,r.shelf,r.spot,
+        ing?'"'+ing.tradeName.replace(/"/g,'""')+'"':'(пусто)',
+        ing?.inci?'"'+ing.inci.replace(/"/g,'""')+'"':'',
+        ing?ing.qty||0:'',
+        ing?.barcode||'',
+        ing?.expiry||''
+      ].join(';');
+    }).join('\n');
+    const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Склад_'+date+'.csv';a.click();
+    cM();return;
+  }
+
+  if(!window.XLSX){alert('Загружается, повторите через секунду');return;}
+  const wsData=[['Помещение','Стеллаж','Полка','Место','Ингредиент','INCI','Остаток (г)','Штрихкод','Срок годности']];
+  rows.forEach(r=>{
+    const ing=r.ing;
+    wsData.push([r.room,r.rack,r.shelf,r.spot,
+      ing?ing.tradeName:'(пусто)',
+      ing?.inci||'',
+      ing?ing.qty||0:'',
+      ing?.barcode||'',
+      ing?.expiry||''
+    ]);
+  });
+  const ws=window.XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols']=[{wch:16},{wch:14},{wch:12},{wch:10},{wch:28},{wch:24},{wch:11},{wch:14},{wch:12}];
+  const wb=window.XLSX.utils.book_new();
+  window.XLSX.utils.book_append_sheet(wb,ws,'Склад');
+  window.XLSX.writeFile(wb,'Склад_'+date+'.xlsx');
+  cM();
 }
 
 function exportInv(mode){
